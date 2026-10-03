@@ -266,7 +266,6 @@
     <nav aria-label="Primary">
       <a href="#" id="navAsk" class="active" aria-current="page">Ask the AI</a>
       <a href="#dashboard">Dashboard</a>
-      <a href="#" id="navFind">Find a Dentist</a>
       <a href="#careplan">Care Plan</a>
     </nav>
   </div>
@@ -591,10 +590,8 @@ const Radar = (function(){
 })();
 
 function setNav(radar){
-  document.getElementById("navFind").classList.toggle("active",radar);
   document.getElementById("navAsk").classList.toggle("active",!radar);
 }
-document.getElementById("navFind").addEventListener("click",e=>{e.preventDefault();Radar.open();});
 document.getElementById("openRadarLink").addEventListener("click",e=>{e.preventDefault();Radar.open();});
 document.getElementById("navAsk").addEventListener("click",e=>{e.preventDefault();Radar.close();});
 document.getElementById("radarBack").addEventListener("click",e=>{e.preventDefault();Radar.close();});
