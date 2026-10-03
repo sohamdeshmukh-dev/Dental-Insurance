@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# local frontend secrets
+apps/web/config.js
