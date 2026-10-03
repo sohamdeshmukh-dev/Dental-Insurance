@@ -5,7 +5,8 @@ from datetime import date
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest)
+from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, RedeemRequest)
+from services import rewards as rewards_svc
 from services import tools
 from services.procedures import interpret
 from services.supervisor import compare_networks, run
@@ -71,3 +72,26 @@ def care_plan(req: CarePlanRequest):
 @app.post("/api/v1/agent/message")
 def agent_message(req: AgentMessage):
     return run(req.message, today=req.today, session_id=req.session_id)
+
+
+@app.get("/api/v1/benefits/timeline")
+def benefits_timeline():
+    plan = tools.get_plan_details("LFG-123")
+    member = tools.get_member(MEMBER_ID)
+    return tools.get_funding_timeline(plan, member, date.today()).model_dump()
+
+
+@app.get("/api/v1/rewards")
+def rewards():
+    plan = tools.get_plan_details("LFG-123")
+    member = tools.get_member(MEMBER_ID)
+    return tools.get_rewards(plan, member).model_dump()
+
+
+@app.post("/api/v1/rewards/redeem")
+def rewards_redeem(req: RedeemRequest):
+    plan = tools.get_plan_details("LFG-123")
+    member = tools.get_member(MEMBER_ID)
+    profile = tools.get_rewards(plan, member)
+    ok, msg, bal, entries = rewards_svc.redeem(profile, req.item_id)
+    return {"ok": ok, "message": msg, "points_balance": bal, "sweepstakes_entries": entries}

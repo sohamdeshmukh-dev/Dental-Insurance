@@ -140,6 +140,92 @@
   .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
   @keyframes blink{0%,60%,100%{opacity:.25;}30%{opacity:1;}}
 
+  /* ===================== Dashboard / Rewards / Care views ===================== */
+  .view{max-width:1120px;margin:0 auto;padding:26px 24px 10px;}
+  .loading{padding:60px 0;text-align:center;color:var(--muted);font-size:14px;}
+  .d-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+  .d-title{font-family:var(--serif);font-size:24px;font-weight:600;}
+  .d-sub{font-size:13px;color:var(--muted);margin-top:3px;}
+  .pill-state{font-size:12px;font-weight:700;border:1px solid;border-radius:999px;padding:5px 12px;white-space:nowrap;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+  .stat.hi{border-color:#CBE6D5;background:var(--in-tint);}
+  .stat-k{font-size:12px;color:var(--muted);}
+  .stat-v{font-size:22px;font-weight:700;margin-top:4px;}
+  .gauge{height:12px;border-radius:999px;background:#EDE7E2;overflow:hidden;}
+  .gauge-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--accent));border-radius:999px;}
+  .gauge-cap{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;}
+
+  .panel-lite{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:16px;}
+  .pl-title{font-size:13px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+  .chart{width:100%;height:150px;display:block;}
+  .chart-x{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:4px;padding:0 6px;}
+  .cat-row{display:flex;align-items:center;gap:12px;margin:9px 0;}
+  .cat-k{width:92px;font-size:13px;color:#44423F;}
+  .cat-bar{flex:1;height:10px;border-radius:999px;background:#EDE7E2;overflow:hidden;}
+  .cat-bar div{height:100%;border-radius:999px;}
+  .cat-v{width:60px;text-align:right;font-size:13px;font-weight:700;}
+
+  /* rewards */
+  .demo-banner{background:#FBF0DC;border:1px solid #F0D9A8;color:#7A5400;font-size:12.5px;font-weight:600;
+    border-radius:12px;padding:9px 14px;margin-bottom:16px;}
+  .hero{display:grid;grid-template-columns:1fr 240px;gap:16px;margin-bottom:6px;}
+  .hero-l{background:linear-gradient(135deg,var(--brand),var(--brand-700));color:#fff;border-radius:18px;padding:20px 22px;}
+  .tier-badge{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.16);}
+  .pts{font-size:40px;font-weight:800;margin:12px 0 2px;line-height:1;}
+  .pts span{display:block;font-size:12px;font-weight:500;opacity:.8;margin-top:5px;}
+  .tier-prog{height:8px;border-radius:999px;background:rgba(255,255,255,.2);overflow:hidden;margin-top:14px;}
+  .tier-prog-fill{height:100%;background:var(--accent);border-radius:999px;}
+  .tier-cap{display:flex;justify-content:space-between;font-size:11.5px;opacity:.85;margin-top:7px;}
+  .hero-r{background:var(--accent-tint);border:1px solid #F6D4C6;border-radius:18px;padding:20px;display:flex;flex-direction:column;justify-content:center;text-align:center;}
+  .entry-k{font-size:12px;color:#8a4a2e;font-weight:600;}
+  .entry-v{font-size:30px;font-weight:800;color:var(--accent-700);margin:4px 0;}
+  .entry-note{font-size:11px;color:#8a5a45;}
+  .rwd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+  .earn{margin:0;padding-left:18px;font-size:13px;line-height:1.9;color:#44423F;}
+  .earn-foot{font-size:11.5px;color:var(--faint);margin-top:8px;}
+  .ledger{list-style:none;margin:0;padding:0;}
+  .ledger li{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line-soft);}
+  .ledger li:last-child{border-bottom:none;}
+  .ledger li b{color:var(--in);}
+  .catalog{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px;}
+  .rwd{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;display:flex;flex-direction:column;}
+  .rwd.locked{opacity:.62;}
+  .rwd-top{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .rwd-ic{font-size:20px;}
+  .rwd-type{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);}
+  .rwd-name{font-size:14.5px;font-weight:700;}
+  .rwd-detail{font-size:12px;color:var(--muted);margin-top:4px;flex:1;line-height:1.45;}
+  .rwd-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+  .rwd-cost{font-size:13px;font-weight:700;color:var(--brand);}
+  .rwd-btn{border:none;background:var(--brand);color:#fff;font-weight:700;font-size:12.5px;border-radius:9px;padding:7px 14px;cursor:pointer;}
+  .rwd-btn:hover{background:var(--brand-700);}
+  .rwd-btn:disabled{background:#D8D2CC;color:#fff;cursor:not-allowed;}
+  .rwd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--brand);color:#fff;
+    font-size:13px;font-weight:600;padding:11px 18px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);
+    transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:60;max-width:90vw;}
+  .rwd-toast.show{transform:translateX(-50%) translateY(0);}
+
+  /* care timeline */
+  .timeline{position:relative;margin:10px 0 4px;padding-left:4px;}
+  .tl-item{position:relative;padding:0 0 18px 28px;border-left:2px solid var(--line);}
+  .tl-item:last-child{border-left-color:transparent;}
+  .tl-dot{position:absolute;left:-7px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 0 0 2px var(--accent);}
+  .tl-item.done .tl-dot{background:var(--in);box-shadow:0 0 0 2px var(--in);}
+  .tl-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;}
+  .tl-when{font-size:11.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);}
+  .tl-name{font-size:15px;font-weight:700;margin:3px 0;}
+  .tl-why{font-size:13px;color:#44423F;line-height:1.5;}
+  .tl-tag{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--accent-700);background:var(--accent-tint);border-radius:999px;padding:3px 9px;}
+  .tl-tag.alt{color:var(--brand);background:var(--brand-tint);}
+
+  @media (max-width:760px){
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    .hero,.rwd-grid{grid-template-columns:1fr;}
+    .catalog{grid-template-columns:1fr;}
+  }
+
   /* ===================== Radar view (full-screen Find a Dentist) ===================== */
   body.radar-open{overflow:hidden;}
   #radarView{
@@ -265,8 +351,9 @@
     <span class="sub">Dental Benefits Assistant</span>
     <nav aria-label="Primary">
       <a href="#" id="navAsk" class="active" aria-current="page">Ask the AI</a>
-      <a href="#dashboard">Dashboard</a>
-      <a href="#careplan">Care Plan</a>
+      <a href="#" id="navDash">Dashboard</a>
+      <a href="#" id="navRewards">Rewards</a>
+      <a href="#" id="navCare">Care Plan</a>
     </nav>
   </div>
   <div class="user">
@@ -357,6 +444,38 @@
   </aside>
 
 </div>
+
+<!-- ================= DASHBOARD ================= -->
+<section class="view" id="dashboardView" aria-label="Benefits dashboard" hidden>
+  <div id="dashBody"><div class="loading">Loading your benefits…</div></div>
+</section>
+
+<!-- ================= REWARDS ================= -->
+<section class="view" id="rewardsView" aria-label="Loyalty rewards" hidden>
+  <div id="rewardsBody"><div class="loading">Loading your rewards…</div></div>
+</section>
+
+<!-- ================= CARE PLAN ================= -->
+<section class="view" id="careView" aria-label="Care plan" hidden>
+  <div class="d-head"><div>
+    <div class="d-title">Your recommended care timeline</div>
+    <div class="d-sub">Sequenced by clinical priority first, then to make the best use of your benefits.</div>
+  </div></div>
+  <div class="timeline">
+    <div class="tl-item done"><div class="tl-dot"></div><div class="tl-card">
+      <div class="tl-when">Completed · Aug 2026</div><div class="tl-name">Cleaning &amp; exam</div>
+      <div class="tl-why">Preventive — fully covered in-network.</div></div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-card">
+      <div class="tl-when">October 2026</div><div class="tl-name">Root canal · tooth #14</div>
+      <div class="tl-why">Clinically first — must precede the crown. Estimated member cost ~$210 in-network.</div>
+      <span class="tl-tag">Clinical priority</span></div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-card">
+      <div class="tl-when">January 2027</div><div class="tl-name">Crown · tooth #14</div>
+      <div class="tl-why">Non-urgent and the crown follows the root canal. Scheduling in the new plan year lets a fresh annual maximum apply.</div>
+      <span class="tl-tag alt">Benefit timing</span></div></div>
+  </div>
+  <div class="note"><b>Your dentist decides clinical timing.</b> This sequence never delays urgent care to save money — it only arranges non-urgent steps around your benefits. Estimates only; actual claim processing determines final benefits.</div>
+</section>
 
 <footer>
   <div class="l"><span class="dot"></span>Dental benefits administered by <strong style="color:var(--brand);font-weight:600;margin-left:3px">Lincoln Financial</strong></div>
@@ -584,17 +703,176 @@ const Radar = (function(){
   document.getElementById("go").addEventListener("click",scan);
   document.getElementById("zip").addEventListener("keydown",e=>{if(e.key==="Enter")scan();});
 
-  function open(){document.getElementById("radarView").classList.add("show");document.body.classList.add("radar-open");if(!inited){inited=true;initMap();}else if(map){setTimeout(()=>map.resize(),60);}setNav(true);}
-  function close(){document.getElementById("radarView").classList.remove("show");document.body.classList.remove("radar-open");setNav(false);}
+  function open(){document.getElementById("radarView").classList.add("show");document.body.classList.add("radar-open");if(!inited){inited=true;initMap();}else if(map){setTimeout(()=>map.resize(),60);}}
+  function close(){document.getElementById("radarView").classList.remove("show");document.body.classList.remove("radar-open");}
   return {open,close};
 })();
 
-function setNav(radar){
-  document.getElementById("navAsk").classList.toggle("active",!radar);
+// ============================================================================
+// view router: assistant / dashboard / rewards / care  (radar is a separate overlay)
+// ============================================================================
+const NAV={assistant:"navAsk",dashboard:"navDash",rewards:"navRewards",care:"navCare"};
+const money0=n=>"$"+Math.round(n).toLocaleString();
+let dashLoaded=false, rewardsLoaded=false;
+function showView(name){
+  Radar.close();
+  document.querySelector(".wrap").style.display = name==="assistant" ? "" : "none";
+  ["dashboardView","rewardsView","careView"].forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=(id!==name+"View");});
+  Object.values(NAV).forEach(id=>document.getElementById(id)?.classList.remove("active"));
+  document.getElementById(NAV[name])?.classList.add("active");
+  window.scrollTo({top:0});
+  if(name==="dashboard"&&!dashLoaded){dashLoaded=true;loadDashboard();}
+  if(name==="rewards"&&!rewardsLoaded){rewardsLoaded=true;loadRewards();}
 }
+document.getElementById("navAsk").addEventListener("click",e=>{e.preventDefault();showView("assistant");});
+document.getElementById("navDash").addEventListener("click",e=>{e.preventDefault();showView("dashboard");});
+document.getElementById("navRewards").addEventListener("click",e=>{e.preventDefault();showView("rewards");});
+document.getElementById("navCare").addEventListener("click",e=>{e.preventDefault();showView("care");});
 document.getElementById("openRadarLink").addEventListener("click",e=>{e.preventDefault();Radar.open();});
-document.getElementById("navAsk").addEventListener("click",e=>{e.preventDefault();Radar.close();});
 document.getElementById("radarBack").addEventListener("click",e=>{e.preventDefault();Radar.close();});
+
+// ---------- Dashboard ----------
+const DASH_FALLBACK={annual_maximum:1500,benefits_used:550,benefits_pending:0,benefits_remaining:950,percent_used:36.7,
+  deductible_individual:50,deductible_remaining:50,plan_year_end:"2026-12-31",
+  by_category:{preventive:310,basic:240},
+  months:[["Jan",0,0,1500],["Feb",125,125,1375],["Mar",90,215,1285],["Apr",0,215,1285],["May",120,335,1165],
+    ["Jun",0,335,1165],["Jul",0,335,1165],["Aug",215,550,950],["Sep",0,550,950],["Oct",0,550,950],
+    ["Nov",0,550,950],["Dec",0,550,950]].map(m=>({label:m[0],paid_in_month:m[1],cumulative_used:m[2],remaining:m[3]})),
+  note:"$950 of your $1,500 annual maximum is still available with 89 days left in the plan year — unused benefits do not roll over."};
+
+async function loadDashboard(){
+  let d=DASH_FALLBACK;
+  try{const r=await fetch(`${API_BASE}/api/v1/benefits/timeline`,{signal:AbortSignal.timeout(2000)});if(r.ok)d=await r.json();}catch{}
+  renderDashboard(d);
+}
+function renderDashboard(d){
+  const pctUsed=Math.round(d.percent_used);
+  const state=pctUsed<50?["Plenty remaining","var(--in)"]:pctUsed<80?["Moderate utilization","#B8860B"]:["Near annual maximum","var(--accent)"];
+  const catColors={preventive:"var(--in)",basic:"var(--brand-600)",major:"var(--accent)",ortho:"#8A5A00"};
+  const cats=Object.entries(d.by_category);
+  const catMax=Math.max(1,...cats.map(c=>c[1]));
+  // SVG line of remaining funding across the year
+  const W=620,H=150,P=8, max=d.annual_maximum;
+  const pts=d.months.map((m,i)=>[P+i*(W-2*P)/11, H-P-(m.remaining/max)*(H-2*P)]);
+  const line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const area=`M${pts[0][0].toFixed(1)} ${H-P} `+pts.map(p=>"L"+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ")+` L${pts[11][0].toFixed(1)} ${H-P} Z`;
+  document.getElementById("dashBody").innerHTML=`
+    <div class="d-head">
+      <div><div class="d-title">Your Lincoln Financial funding</div>
+      <div class="d-sub">Plan year ends ${new Date(d.plan_year_end+"T12:00:00").toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})}</div></div>
+      <span class="pill-state" style="color:${state[1]};border-color:${state[1]}">${state[0]}</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-k">Annual maximum</div><div class="stat-v">${money0(d.annual_maximum)}</div></div>
+      <div class="stat"><div class="stat-k">Used + pending</div><div class="stat-v">${money0(d.benefits_used+d.benefits_pending)}</div></div>
+      <div class="stat hi"><div class="stat-k">Available now</div><div class="stat-v" style="color:var(--in)">${money0(d.benefits_remaining)}</div></div>
+      <div class="stat"><div class="stat-k">Deductible left</div><div class="stat-v">${money0(d.deductible_remaining)}</div></div>
+    </div>
+    <div class="gauge"><div class="gauge-fill" style="width:${pctUsed}%"></div></div>
+    <div class="gauge-cap"><span>${money0(d.benefits_used+d.benefits_pending)} used (${pctUsed}%)</span><span>${money0(d.benefits_remaining)} available</span></div>
+
+    <div class="panel-lite">
+      <div class="pl-title">Funding available through the year</div>
+      <svg viewBox="0 0 ${W} ${H}" class="chart" preserveAspectRatio="none" aria-label="Remaining funding by month">
+        <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+        <path d="${area}" fill="url(#g)"/>
+        <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>
+        ${pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${d.months[i].paid_in_month>0?3:1.6}" fill="var(--accent)"/>`).join("")}
+      </svg>
+      <div class="chart-x">${d.months.map(m=>`<span>${m.label[0]}</span>`).join("")}</div>
+    </div>
+
+    <div class="panel-lite">
+      <div class="pl-title">Where your benefits went</div>
+      ${cats.map(([k,v])=>`<div class="cat-row"><span class="cat-k">${k[0].toUpperCase()+k.slice(1)}</span>
+        <div class="cat-bar"><div style="width:${v/catMax*100}%;background:${catColors[k]||'var(--muted)'}"></div></div>
+        <span class="cat-v">${money0(v)}</span></div>`).join("")}
+    </div>
+
+    <div class="note"><b>Heads up:</b> ${d.note}</div>`;
+}
+
+// ---------- Rewards (PROTOTYPE) ----------
+const REWARDS_FALLBACK={tier:"Gold",tier_multiplier:1.25,points_balance:2292,lifetime_points:2070,next_tier:"Platinum",
+  points_to_next_tier:1430,tier_progress_pct:28.5,sweepstakes_entries:2,
+  tiers:[{name:"Bronze",min_points:0},{name:"Silver",min_points:500},{name:"Gold",min_points:1500},{name:"Platinum",min_points:3500}],
+  earn_rules:["Routine exam — 50 pts","Cleaning — 100 pts","X-rays — 40 pts","Fluoride / sealant — 60–80 pts","In-network visit — +25 pts","Both recommended cleanings in a year — +200 pts","Complete dentist-recommended follow-up care — +150 pts"],
+  ledger:[{event_date:"2026-08-07",description:"Preventive streak: both recommended cleanings this year",points:200},
+    {event_date:"2026-08-07",description:"Cleaning completed",points:100},
+    {event_date:"2026-08-07",description:"Completed recommended care (Resin filling)",points:150},
+    {event_date:"2026-05-20",description:"Completed recommended care (Resin filling)",points:150},
+    {event_date:"2026-03-12",description:"Cleaning completed",points:100}],
+  catalog:[{id:"gc-amazon-25",name:"$25 Amazon gift card",type:"gift_card",cost_points:2500,value:"$25",detail:"Digital gift card by email (demo).",affordable:false},
+    {id:"gc-target-50",name:"$50 Target gift card",type:"gift_card",cost_points:4800,value:"$50",detail:"Digital gift card by email (demo).",affordable:false},
+    {id:"disc-sealants",name:"10% off your next visit",type:"discount",cost_points:1500,value:"10% off",detail:"At your selected in-network dentist (demo).",affordable:true},
+    {id:"disc-whitening",name:"20% off cosmetic whitening",type:"discount",cost_points:2200,value:"20% off",detail:"At your selected in-network dentist (demo).",affordable:true},
+    {id:"swp-500",name:"Quarterly $500 cash sweepstakes entry",type:"cash_sweepstakes",cost_points:500,value:"1 entry",detail:"Entry into the quarterly $500 cash drawing (demo).",affordable:true},
+    {id:"swp-grand",name:"Annual $5,000 grand-prize sweepstakes entry",type:"cash_sweepstakes",cost_points:1000,value:"1 entry",detail:"Entry into the annual grand-prize drawing (demo).",affordable:true},
+    {id:"swp-spa",name:"Wellness spa-day sweepstakes entry",type:"sweepstakes",cost_points:400,value:"1 entry",detail:"Entry into the wellness experience drawing (demo).",affordable:true}],
+  disclaimer:"Prototype rewards for demonstration only — not a live financial product. Points, prizes, sweepstakes, and discounts are illustrative. Clinical urgency always comes first; rewards never depend on getting care you don't need."};
+let REWARDS=null;
+const TYPE_ICON={gift_card:"🎁",discount:"🏷️",cash_sweepstakes:"💵",sweepstakes:"🎟️"};
+const TYPE_LABEL={gift_card:"Gift card",discount:"Discount",cash_sweepstakes:"Cash sweepstakes",sweepstakes:"Sweepstakes"};
+
+async function loadRewards(){
+  REWARDS=REWARDS_FALLBACK;
+  try{const r=await fetch(`${API_BASE}/api/v1/rewards`,{signal:AbortSignal.timeout(2000)});if(r.ok)REWARDS=await r.json();}catch{}
+  renderRewards();
+}
+function renderRewards(){
+  const d=REWARDS;
+  const toNext=d.next_tier?`${d.points_to_next_tier.toLocaleString()} pts to ${d.next_tier}`:"Top tier reached";
+  document.getElementById("rewardsBody").innerHTML=`
+    <div class="demo-banner">⚠️ Prototype loyalty program — illustrative rewards, not a live financial product.</div>
+    <div class="hero">
+      <div class="hero-l">
+        <div class="tier-badge tier-${d.tier.toLowerCase()}">${d.tier} tier · ${d.tier_multiplier}× points</div>
+        <div class="pts">${d.points_balance.toLocaleString()}<span>points available</span></div>
+        <div class="tier-prog"><div class="tier-prog-fill" style="width:${d.next_tier?d.tier_progress_pct:100}%"></div></div>
+        <div class="tier-cap"><span>${d.lifetime_points.toLocaleString()} lifetime pts</span><span>${toNext}</span></div>
+      </div>
+      <div class="hero-r">
+        <div class="entry-k">Sweepstakes entries</div>
+        <div class="entry-v">🎟️ ${d.sweepstakes_entries}</div>
+        <div class="entry-note">Earned by preventive-care activity</div>
+      </div>
+    </div>
+
+    <div class="rwd-grid">
+      <div class="panel-lite">
+        <div class="pl-title">How you earn points</div>
+        <ul class="earn">${d.earn_rules.map(r=>`<li>${r}</li>`).join("")}</ul>
+        <div class="earn-foot">Rewards are tied to preventive &amp; dentist-recommended care only — never to getting care you don't need.</div>
+      </div>
+      <div class="panel-lite">
+        <div class="pl-title">Recent points activity</div>
+        <ul class="ledger">${d.ledger.slice(0,6).map(e=>`<li><span>${e.description}</span><b>+${e.points}</b></li>`).join("")}</ul>
+      </div>
+    </div>
+
+    <div class="pl-title" style="margin:22px 0 2px">Redeem your points</div>
+    <div class="catalog">
+      ${d.catalog.map(it=>`<div class="rwd ${it.affordable?"":"locked"}">
+        <div class="rwd-top"><span class="rwd-ic">${TYPE_ICON[it.type]}</span><span class="rwd-type">${TYPE_LABEL[it.type]}</span></div>
+        <div class="rwd-name">${it.name}</div>
+        <div class="rwd-detail">${it.detail}</div>
+        <div class="rwd-foot">
+          <span class="rwd-cost">${it.cost_points.toLocaleString()} pts</span>
+          <button class="rwd-btn" ${it.affordable?"":"disabled"} data-id="${it.id}">${it.affordable?(it.type.includes("sweepstakes")?"Enter":"Redeem"):"Locked"}</button>
+        </div>
+      </div>`).join("")}
+    </div>
+    <div class="note" style="margin-top:18px">${d.disclaimer}</div>`;
+  document.querySelectorAll(".rwd-btn[data-id]").forEach(b=>b.addEventListener("click",()=>redeem(b.dataset.id)));
+}
+async function redeem(id){
+  let res=null;
+  try{const r=await fetch(`${API_BASE}/api/v1/rewards/redeem`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item_id:id}),signal:AbortSignal.timeout(2000)});if(r.ok)res=await r.json();}catch{}
+  if(res&&res.ok){REWARDS.points_balance=res.points_balance;REWARDS.sweepstakes_entries=res.sweepstakes_entries;
+    REWARDS.catalog.forEach(it=>it.affordable=REWARDS.points_balance>=it.cost_points);renderRewards();}
+  rtoast(res?res.message:"Redemption is a demo — connect the backend to apply it.");
+}
+function rtoast(msg){let t=document.getElementById("rwdToast");if(!t){t=document.createElement("div");t.id="rwdToast";t.className="rwd-toast";document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(rtoast._t);rtoast._t=setTimeout(()=>t.classList.remove("show"),2600);}
 
 initMini();
 </script>

@@ -50,6 +50,16 @@ class ServiceRecord(BaseModel):
     service_date: date
 
 
+class PaidClaim(BaseModel):
+    service_date: date
+    code: str
+    description: str
+    category: Category
+    plan_paid: float
+    member_paid: float
+    network: NetworkStatus = "in"
+
+
 class Member(BaseModel):
     member_id: str
     plan_id: str
@@ -59,6 +69,7 @@ class Member(BaseModel):
     benefits_pending: float = 0
     deductible_remaining: float = 0
     history: list[ServiceRecord] = []
+    claims: list[PaidClaim] = []
 
 
 class Procedure(BaseModel):
@@ -216,3 +227,86 @@ class TraceEvent(BaseModel):
     latency_ms: float
     detail: str = ""
     calculation_version: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Funding dashboard
+# ---------------------------------------------------------------------------
+class FundingMonth(BaseModel):
+    month: str  # YYYY-MM
+    label: str  # e.g. "Mar"
+    paid_in_month: float
+    cumulative_used: float
+    remaining: float
+
+
+class FundingTimeline(BaseModel):
+    annual_maximum: float
+    benefits_used: float
+    benefits_pending: float
+    benefits_remaining: float
+    percent_used: float
+    deductible_individual: float
+    deductible_remaining: float
+    plan_year_start: date
+    plan_year_end: date
+    months: list[FundingMonth]
+    by_category: dict[str, float]
+    projected_unused_at_year_end: float
+    note: str
+
+
+# ---------------------------------------------------------------------------
+# Loyalty / rewards  (PROTOTYPE — illustrative values, not a live financial product)
+# ---------------------------------------------------------------------------
+class RewardEvent(BaseModel):
+    event_date: date
+    code: str
+    description: str
+    points: int
+
+
+class RewardItem(BaseModel):
+    id: str
+    name: str
+    type: Literal["gift_card", "sweepstakes", "cash_sweepstakes", "discount"]
+    cost_points: int
+    value: str
+    detail: str
+    affordable: bool = False
+    demo: bool = True
+
+
+class RewardTier(BaseModel):
+    name: str
+    min_points: int
+    multiplier: float
+    perks: list[str]
+
+
+class RewardsProfile(BaseModel):
+    member_id: str
+    points_balance: int
+    lifetime_points: int
+    tier: str
+    tier_multiplier: float
+    next_tier: Optional[str]
+    points_to_next_tier: int
+    tier_progress_pct: float
+    tiers: list[RewardTier]
+    ledger: list[RewardEvent]
+    catalog: list[RewardItem]
+    sweepstakes_entries: int
+    earn_rules: list[str]
+    disclaimer: str
+
+
+class RedeemRequest(BaseModel):
+    item_id: str
+
+
+class RedeemResult(BaseModel):
+    ok: bool
+    message: str
+    points_balance: int
+    sweepstakes_entries: int
