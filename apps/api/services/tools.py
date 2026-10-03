@@ -59,3 +59,14 @@ def optimize_treatment_sequence(plan: DentalPlan, member: Member, codes: list[st
     est = lambda m, p, d: calculate_coverage(plan, m, p.code, network, d)
     return care_planner.optimize_treatment_sequence(plan, member, [lookup_procedure(c) for c in codes],
                                                     urgent_codes, est, today)
+
+
+def get_funding_timeline(plan: DentalPlan, member: Member, today: date):
+    return benefits.get_funding_timeline(plan, member, today)
+
+
+def get_rewards(plan: DentalPlan, member: Member, lifetime_bonus: int = 1180,
+                redeemed_points: int = 0, extra_entries: int = 0):
+    from services import rewards
+    return rewards.compute_rewards(plan, member, lifetime_bonus=lifetime_bonus,
+                                   redeemed_points=redeemed_points, extra_entries=extra_entries)

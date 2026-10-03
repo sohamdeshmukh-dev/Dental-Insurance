@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from schemas import (DentalPlan, FrequencyLimit, Member, Provenance, Provider,
+from schemas import (DentalPlan, FrequencyLimit, Member, PaidClaim, Provenance, Provider,
                      ProviderNetwork, ServiceRecord, WaitingPeriod)
 
 _src = lambda page, conf=0.99: Provenance(source_type="MOCK", source_id="lincoln-ppo-2026.pdf", page=page, confidence=conf)
@@ -26,10 +26,27 @@ PLAN = DentalPlan(
     },
 )
 
+# Paid claims so far this plan year (plan_paid sums to benefits_used = 550).
+_CLAIMS = [
+    PaidClaim(service_date=date(2026, 2, 18), code="D0120", description="Periodic oral exam",
+              category="preventive", plan_paid=55, member_paid=0),
+    PaidClaim(service_date=date(2026, 2, 18), code="D0274", description="Bitewing X-rays (4 films)",
+              category="preventive", plan_paid=70, member_paid=0),
+    PaidClaim(service_date=date(2026, 3, 12), code="D1110", description="Adult cleaning",
+              category="preventive", plan_paid=90, member_paid=0),
+    PaidClaim(service_date=date(2026, 5, 20), code="D2391", description="Resin filling (1 surface)",
+              category="basic", plan_paid=120, member_paid=30),
+    PaidClaim(service_date=date(2026, 8, 7), code="D2391", description="Resin filling (1 surface)",
+              category="basic", plan_paid=120, member_paid=30),
+    PaidClaim(service_date=date(2026, 8, 7), code="D1110", description="Adult cleaning",
+              category="preventive", plan_paid=95, member_paid=0),
+]
+
 MEMBERS = {"demo": Member(
     member_id="demo", plan_id="LFG-123", zip_code="19122", coverage_effective_date=date(2024, 1, 1),
-    benefits_used=550, benefits_pending=0, deductible_remaining=50,
-    history=[ServiceRecord(code="D1110", service_date=date(2026, 3, 12))],
+    benefits_used=sum(c.plan_paid for c in _CLAIMS), benefits_pending=0, deductible_remaining=50,
+    history=[ServiceRecord(code=c.code, service_date=c.service_date) for c in _CLAIMS],
+    claims=_CLAIMS,
 )}
 
 PROVIDERS = [
