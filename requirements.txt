@@ -1,3 +1,4 @@
 # Runtime deps live with the API service (also what Vercel installs); this adds test-only deps.
 -r apps/api/requirements.txt
 pytest>=8
+# boto3>=1.35  # uncomment to enable the AWS Bedrock agent path

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import mapboxgl from "mapbox-gl";
 import { api, MAPBOX_TOKEN, type Provider } from "../lib/api";
 import { PROVIDERS, ZIP_CENTROIDS, haversine } from "../data/fallback";
 import { Icon } from "./bits";
+import { ClinicDetail } from "./ClinicDetail";
+import { useProfile } from "../lib/profile";
 import "../radar.css";
 
 const EMOJI: Record<string, string> = { Endodontist: "🦷", "General Dentist": "🪥" };
@@ -22,11 +24,12 @@ async function fetchProviders(zip: string, center: [number, number]): Promise<Pr
 }
 
 export function Radar({ onClose }: { onClose: () => void }) {
+  const { activeId } = useProfile();
   const node = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Record<string, mapboxgl.Marker>>({});
   const me = useRef<mapboxgl.Marker | null>(null);
-  const popup = useRef<mapboxgl.Popup | null>(null);
+  const [detail, setDetail] = useState<Provider | null>(null);
   const [zip, setZip] = useState("19122");
   const [center, setCenter] = useState<[number, number]>([39.978, -75.137]);
   const [radius, setRadius] = useState(10);
@@ -84,16 +87,8 @@ export function Radar({ onClose }: { onClose: () => void }) {
   function select(id: string, fly: boolean) {
     const p = providers.find((x) => x.provider_id === id); if (!p || !map.current) return;
     if (fly) map.current.flyTo({ center: [p.longitude, p.latitude], zoom: 15.2, pitch: 60, duration: 1200, essential: true });
-    popup.current?.remove();
-    const inNet = p.network_status === "VERIFIED_IN_NETWORK";
-    const chosen = picked === id;
-    popup.current = new mapboxgl.Popup({ offset: 22, closeButton: true }).setLngLat([p.longitude, p.latitude]).setHTML(
-      `<div class="pop"><div class="name">${p.name}</div><div class="sub">${p.specialty} · ${p.distance_miles} mi away</div>
-      <div class="line"><span>Network:</span> ${inNet ? "✅ Verified in-network (Lincoln PPO)" : "◻️ Out of network"}</div>
-      <div class="line"><span>Address:</span> ${p.address}</div><div class="line"><span>Phone:</span> ${p.phone}</div>
-      <div class="line"><span>New patients:</span> ${p.accepting_new_patients ? "Accepting" : "Not accepting"}</div></div>`,
-    ).addTo(map.current);
-    setPicked(chosen ? picked : id);
+    setPicked(id);
+    setDetail(p);
   }
 
   const search = () => { const c = ZIP_CENTROIDS[zip.trim()]; if (!c) return; setCenter(c); map.current?.flyTo({ center: [c[1], c[0]], zoom: 13.4, pitch: 58, duration: 1400 }); };
@@ -131,6 +126,7 @@ export function Radar({ onClose }: { onClose: () => void }) {
         <div className="row"><span className="pip" style={{ background: "var(--pick)", boxShadow: "0 0 10px rgba(255,210,63,.6)" }} />Your dentist</div>
         <div className="row"><span className="pip" style={{ background: "var(--me)", boxShadow: "0 0 10px var(--me-glow)" }} />You</div>
       </div>
+      <AnimatePresence>{detail && <ClinicDetail provider={detail} memberId={activeId} onClose={() => setDetail(null)} />}</AnimatePresence>
     </motion.div>
   );
 }

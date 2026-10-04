@@ -68,8 +68,39 @@ async function postJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | 
   } catch { return null; }
 }
 
+export interface ClinicServiceEstimate { code: string; name: string; category: string; allowed_amount: number; member_pays: number; covered: boolean; }
+export interface ClinicEstimates { provider_id: string; provider_name: string; network: Network; services: ClinicServiceEstimate[]; disclaimer: string; }
+export type Urgency = "routine" | "soon" | "urgent";
+export interface PreAuth {
+  id: string; status: "submitted" | "approved" | "denied"; procedure_name: string; provider_name: string;
+  estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string; decision_note: string; submitted_at: string;
+}
+
+export interface PaymentItem { code: string; name: string; cost: number; }
+export interface ScheduleEntry { n: number; due_date: string; amount: number; }
+export interface PaymentPlan {
+  id: string; member_name: string; provider_id: string; provider_name: string; items: PaymentItem[];
+  total: number; term_months: number; monthly_amount: number;
+  status: "draft" | "sent_to_doctor" | "active" | "declined"; schedule: ScheduleEntry[];
+  audit: { at: string; event: string }[]; created_at: string;
+}
+export interface PTORequest {
+  id: string; member_name: string; employer: string; date_needed: string; hours: number; reason: string;
+  status: "submitted" | "approved" | "denied"; note: string;
+}
+
+export type Relationship = "guardian" | "dependent";
+export interface MemberSummary {
+  member_id: string; name: string; relationship: Relationship; age: number | null;
+  annual_maximum: number; benefits_used: number; benefits_remaining: number; percent_used: number;
+  state: "plenty_remaining" | "moderate_utilization" | "near_annual_maximum";
+}
+export interface Account { account_id: string; employer: string; plan_name: string; guardian_id: string; members: MemberSummary[]; }
+
 export const api = {
-  agent: (message: string) => postJSON<AgentResponse>("/api/v1/agent/message", { message, session_id: SESSION_ID }, 30000),
+  account: () => getJSON<Account>("/api/v1/account"),
+  agent: (message: string, member = "demo") =>
+    postJSON<AgentResponse>("/api/v1/agent/message", { message, member_id: member, session_id: SESSION_ID }, 30000),
   research: () => getJSON<ResearchBrief>(`/api/v1/research/${SESSION_ID}`),
   runResearch: () => fetch(`${API_BASE}/api/v1/research/${SESSION_ID}/run`, {
     method: "POST", keepalive: true,
@@ -78,12 +109,25 @@ export const api = {
     getJSON<{ providers: { provider: Omit<Provider, "network_status" | "distance_miles">; network_status: Provider["network_status"]; distance_miles: number }[] }>(
       `/api/v1/providers?zip_code=${zip}&radius=15&include_out_of_network=true`,
     ),
-  timeline: () => getJSON<Timeline>("/api/v1/benefits/timeline"),
-  rewards: () => getJSON<Rewards>("/api/v1/rewards"),
-  redeem: (item_id: string) =>
+  timeline: (member = "demo") => getJSON<Timeline>(`/api/v1/benefits/timeline?member_id=${member}`),
+  rewards: (member = "demo") => getJSON<Rewards>(`/api/v1/rewards?member_id=${member}`),
+  redeem: (item_id: string, member = "demo") =>
     postJSON<{ ok: boolean; message: string; points_balance: number; sweepstakes_entries: number }>(
-      "/api/v1/rewards/redeem", { item_id }, 2000,
+      "/api/v1/rewards/redeem", { item_id, member_id: member }, 2000,
     ),
+  clinicEstimates: (providerId: string, member = "demo") =>
+    getJSON<ClinicEstimates>(`/api/v1/providers/${providerId}/estimates?member_id=${member}`),
+  preauthCreate: (body: { member_id: string; provider_id: string; code: string; estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string }) =>
+    postJSON<PreAuth>("/api/v1/preauth", body, 3000),
+  preauthDecide: (id: string) => postJSON<PreAuth>(`/api/v1/preauth/${id}/decide`, {}, 3000),
+  paymentPlanCreate: (body: { member_id: string; provider_id: string; codes: string[]; term_months: number }) =>
+    postJSON<PaymentPlan>("/api/v1/payment-plans", body, 3000),
+  paymentPlanSend: (id: string) => postJSON<PaymentPlan>(`/api/v1/payment-plans/${id}/send`, {}, 3000),
+  paymentPlanDecide: (id: string, approve: boolean) =>
+    postJSON<PaymentPlan>(`/api/v1/payment-plans/${id}/doctor-decision?approve=${approve}`, {}, 3000),
+  ptoCreate: (body: { member_id: string; date_needed: string; hours: number; reason: string }) =>
+    postJSON<PTORequest>("/api/v1/pto", body, 3000),
+  ptoDecide: (id: string, approve: boolean) => postJSON<PTORequest>(`/api/v1/pto/${id}/decide?approve=${approve}`, {}, 3000),
 };
 
 export const money = (n: number) => "$" + Math.round(n).toLocaleString();

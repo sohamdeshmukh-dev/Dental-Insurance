@@ -3,19 +3,21 @@ import { AnimatePresence, motion } from "framer-motion";
 import { api, type Rewards as RewardsData } from "../lib/api";
 import { REWARDS_FALLBACK } from "../data/fallback";
 import { AnimatedNumber } from "../components/bits";
+import { useProfile } from "../lib/profile";
 
 const TYPE_ICON: Record<string, string> = { gift_card: "🎁", discount: "🏷️", cash_sweepstakes: "💵", sweepstakes: "🎟️" };
 const TYPE_LABEL: Record<string, string> = { gift_card: "Gift card", discount: "Discount", cash_sweepstakes: "Cash sweepstakes", sweepstakes: "Sweepstakes" };
 
 export function Rewards() {
+  const { activeId } = useProfile();
   const [d, setD] = useState<RewardsData | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => { api.rewards().then((r) => setD(r ?? REWARDS_FALLBACK)); }, []);
+  useEffect(() => { setD(null); api.rewards(activeId).then((r) => setD(r ?? REWARDS_FALLBACK)); }, [activeId]);
 
   async function redeem(id: string) {
     if (!d) return;
-    const res = await api.redeem(id);
+    const res = await api.redeem(id, activeId);
     if (res?.ok) {
       setD({
         ...d, points_balance: res.points_balance, sweepstakes_entries: res.sweepstakes_entries,

@@ -60,16 +60,42 @@ class PaidClaim(BaseModel):
     network: NetworkStatus = "in"
 
 
+Relationship = Literal["guardian", "dependent"]
+
+
 class Member(BaseModel):
     member_id: str
     plan_id: str
     zip_code: str
     coverage_effective_date: date
+    name: str = "Member"
+    relationship: Relationship = "guardian"
+    age: Optional[int] = None
     benefits_used: float = 0
     benefits_pending: float = 0
     deductible_remaining: float = 0
     history: list[ServiceRecord] = []
     claims: list[PaidClaim] = []
+
+
+class MemberSummary(BaseModel):
+    member_id: str
+    name: str
+    relationship: Relationship
+    age: Optional[int] = None
+    annual_maximum: float
+    benefits_used: float
+    benefits_remaining: float
+    percent_used: float
+    state: Literal["plenty_remaining", "moderate_utilization", "near_annual_maximum"]
+
+
+class Account(BaseModel):
+    account_id: str
+    employer: str
+    plan_name: str
+    guardian_id: str
+    members: list[MemberSummary]
 
 
 class Procedure(BaseModel):
@@ -131,6 +157,7 @@ class Provider(BaseModel):
     phone: str
     accepting_new_patients: bool = True
     procedures: list[str] = []  # CDT codes offered
+    fee_factor: float = 1.0     # clinic-specific fee level vs regional baseline (mock)
 
 
 class ProviderNetwork(BaseModel):
@@ -183,6 +210,7 @@ class CarePlanRequest(BaseModel):
     urgent_codes: list[str] = []
     network: NetworkStatus = "in"
     today: Optional[date] = None
+    member_id: str = "demo"
 
 
 class EstimateRequest(BaseModel):
@@ -190,6 +218,7 @@ class EstimateRequest(BaseModel):
     procedure_code: str
     provider_id: Optional[str] = None
     zip_code: Optional[str] = None
+    member_id: str = "demo"
 
 
 class InterpretRequest(BaseModel):
@@ -200,6 +229,7 @@ class AgentMessage(BaseModel):
     session_id: Optional[str] = None
     message: str
     today: Optional[date] = None
+    member_id: str = "demo"
 
 
 class Claim(BaseModel):
@@ -304,6 +334,7 @@ class RewardsProfile(BaseModel):
 
 class RedeemRequest(BaseModel):
     item_id: str
+    member_id: str = "demo"
 
 
 class RedeemResult(BaseModel):
@@ -311,3 +342,127 @@ class RedeemResult(BaseModel):
     message: str
     points_balance: int
     sweepstakes_entries: int
+
+
+# ---------------------------------------------------------------------------
+# Per-clinic pre-estimates
+# ---------------------------------------------------------------------------
+class ClinicServiceEstimate(BaseModel):
+    code: str
+    name: str
+    category: str
+    allowed_amount: float
+    member_pays: float
+    covered: bool
+
+
+class ClinicEstimates(BaseModel):
+    provider_id: str
+    provider_name: str
+    network: NetworkStatus
+    services: list[ClinicServiceEstimate]
+    disclaimer: str
+
+
+# ---------------------------------------------------------------------------
+# Out-of-network pre-authorization  (SIMULATED — mock Lincoln approval)
+# ---------------------------------------------------------------------------
+Urgency = Literal["routine", "soon", "urgent"]
+
+
+class PreAuthCreate(BaseModel):
+    member_id: str = "demo"
+    provider_id: str
+    code: str
+    estimated_cost: float
+    requested_amount: float
+    urgency: Urgency = "routine"
+    reason: str = ""
+
+
+class PreAuth(BaseModel):
+    id: str
+    member_id: str
+    member_name: str
+    provider_id: str
+    provider_name: str
+    code: str
+    procedure_name: str
+    estimated_cost: float
+    requested_amount: float
+    urgency: Urgency
+    reason: str
+    status: Literal["submitted", "approved", "denied"]
+    submitted_at: str
+    decided_at: Optional[str] = None
+    decision_note: str = ""
+    demo: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Payment plans  (SIMULATED agreement — no real money, no e-signature)
+# ---------------------------------------------------------------------------
+class PaymentItem(BaseModel):
+    code: str
+    name: str
+    cost: float
+
+
+class ScheduleEntry(BaseModel):
+    n: int
+    due_date: str
+    amount: float
+
+
+class AuditEntry(BaseModel):
+    at: str
+    event: str
+
+
+class PaymentPlanCreate(BaseModel):
+    member_id: str = "demo"
+    provider_id: str
+    codes: list[str]
+    term_months: int = 12
+
+
+class PaymentPlan(BaseModel):
+    id: str
+    member_id: str
+    member_name: str
+    provider_id: str
+    provider_name: str
+    items: list[PaymentItem]
+    total: float
+    term_months: int
+    monthly_amount: float
+    status: Literal["draft", "sent_to_doctor", "active", "declined"]
+    schedule: list[ScheduleEntry]
+    audit: list[AuditEntry]
+    created_at: str
+    demo: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Emergency Paid-Time-Off request  (SIMULATED HR workflow)
+# ---------------------------------------------------------------------------
+class PTOCreate(BaseModel):
+    member_id: str = "demo"
+    date_needed: str
+    hours: float = 4
+    reason: str = "Emergency dental visit"
+
+
+class PTORequest(BaseModel):
+    id: str
+    member_id: str
+    member_name: str
+    employer: str
+    date_needed: str
+    hours: float
+    reason: str
+    status: Literal["submitted", "approved", "denied"]
+    submitted_at: str
+    decided_at: Optional[str] = None
+    note: str = ""
+    demo: bool = True

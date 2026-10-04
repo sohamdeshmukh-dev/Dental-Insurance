@@ -10,7 +10,7 @@ _src = lambda page, conf=0.99: Provenance(source_type="MOCK", source_id="lincoln
 
 PLAN = DentalPlan(
     plan_id="LFG-123", plan_name="Lincoln Dental PPO", network_type="PPO", network_id="LINCOLN_PPO",
-    deductible_individual=50, annual_maximum=1500,
+    deductible_individual=50, annual_maximum=2000,
     coinsurance_in_network={"preventive": 1.0, "basic": 0.8, "major": 0.5, "ortho": 0.5},
     coinsurance_out_of_network={"preventive": 0.8, "basic": 0.6, "major": 0.4, "ortho": 0.4},
     plan_year_start=date(2026, 1, 1), plan_year_end=date(2026, 12, 31),
@@ -42,32 +42,54 @@ _CLAIMS = [
               category="preventive", plan_paid=95, member_paid=0),
 ]
 
-MEMBERS = {"demo": Member(
-    member_id="demo", plan_id="LFG-123", zip_code="19122", coverage_effective_date=date(2024, 1, 1),
-    benefits_used=sum(c.plan_paid for c in _CLAIMS), benefits_pending=0, deductible_remaining=50,
-    history=[ServiceRecord(code=c.code, service_date=c.service_date) for c in _CLAIMS],
-    claims=_CLAIMS,
-)}
+# Dependent (child) paid claims — pediatric preventive care this plan year.
+_CHILD_CLAIMS = [
+    PaidClaim(service_date=date(2026, 4, 3), code="D0120", description="Periodic oral exam (child)",
+              category="preventive", plan_paid=50, member_paid=0),
+    PaidClaim(service_date=date(2026, 4, 3), code="D1206", description="Fluoride treatment",
+              category="preventive", plan_paid=40, member_paid=0),
+    PaidClaim(service_date=date(2026, 4, 3), code="D1110", description="Child cleaning",
+              category="preventive", plan_paid=85, member_paid=0),
+    PaidClaim(service_date=date(2026, 9, 15), code="D1351", description="Sealant, permanent molar",
+              category="preventive", plan_paid=45, member_paid=0),
+]
+
+
+def _member(mid, name, rel, claims, *, age=None, deductible_remaining=50):
+    return Member(
+        member_id=mid, plan_id="LFG-123", zip_code="19122", coverage_effective_date=date(2024, 1, 1),
+        name=name, relationship=rel, age=age,
+        benefits_used=sum(c.plan_paid for c in claims), benefits_pending=0, deductible_remaining=deductible_remaining,
+        history=[ServiceRecord(code=c.code, service_date=c.service_date) for c in claims], claims=claims)
+
+
+MEMBERS = {
+    "demo": _member("demo", "Jordan Lee", "guardian", _CLAIMS),
+    "demo-child": _member("demo-child", "Riley Lee", "dependent", _CHILD_CLAIMS, age=9, deductible_remaining=0),
+}
+
+ACCOUNT = {"account_id": "ACME-0007", "employer": "Acme Co", "guardian_id": "demo",
+           "member_ids": ["demo", "demo-child"]}
 
 PROVIDERS = [
     Provider(provider_id="P001", name="Fishtown Family Dental", specialty="General Dentist", address="1200 Frankford Ave",
              city="Philadelphia", state="PA", zip_code="19125", latitude=39.9702, longitude=-75.1340, phone="215-555-0101",
-             procedures=["D0120", "D1110", "D0274", "D2391", "D2740", "D2750", "D7140", "D4341"]),
+             procedures=["D0120", "D1110", "D0274", "D2391", "D2740", "D2750", "D7140", "D4341"], fee_factor=0.98),
     Provider(provider_id="P002", name="Temple Endodontics", specialty="Endodontist", address="3223 N Broad St",
              city="Philadelphia", state="PA", zip_code="19140", latitude=40.0100, longitude=-75.1530, phone="215-555-0102",
-             procedures=["D3310", "D3320", "D3330"]),
+             procedures=["D3310", "D3320", "D3330"], fee_factor=1.08),
     Provider(provider_id="P003", name="Girard Smile Studio", specialty="General Dentist", address="1500 W Girard Ave",
              city="Philadelphia", state="PA", zip_code="19130", latitude=39.9700, longitude=-75.1650, phone="215-555-0103",
-             procedures=["D0120", "D1110", "D2391", "D2740", "D3310", "D3320", "D3330"]),
+             procedures=["D0120", "D1110", "D2391", "D2740", "D3310", "D3320", "D3330"], fee_factor=1.0),
     Provider(provider_id="P004", name="Northern Liberties Dental", specialty="General Dentist", address="900 N 2nd St",
              city="Philadelphia", state="PA", zip_code="19123", latitude=39.9640, longitude=-75.1400, phone="215-555-0104",
-             procedures=["D0120", "D1110", "D2740", "D4341", "D3330"]),
+             procedures=["D0120", "D1110", "D2740", "D4341", "D3330"], fee_factor=0.95),
     Provider(provider_id="P005", name="Center City Premier Dentistry", specialty="General Dentist", address="1800 Walnut St",
              city="Philadelphia", state="PA", zip_code="19103", latitude=39.9500, longitude=-75.1720, phone="215-555-0105",
-             procedures=["D0120", "D1110", "D2740", "D3330"]),
+             procedures=["D0120", "D1110", "D2740", "D3330"], fee_factor=1.18),
     Provider(provider_id="P006", name="Kensington Endodontic Care", specialty="Endodontist", address="2500 E Allegheny Ave",
              city="Philadelphia", state="PA", zip_code="19134", latitude=39.9860, longitude=-75.1000, phone="215-555-0106",
-             procedures=["D3310", "D3320", "D3330"]),
+             procedures=["D3310", "D3320", "D3330"], fee_factor=1.1),
 ]
 
 NETWORKS = [ProviderNetwork(provider_id=pid, network_id="LINCOLN_PPO", effective_date=date(2023, 1, 1),

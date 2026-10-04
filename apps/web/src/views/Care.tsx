@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CARE_TREATMENTS, type CareTreatment } from "../data/fallback";
+import { CARE_TREATMENTS, CARE_PRODUCTS, amazonSearch, type CareTreatment } from "../data/fallback";
 
 const money = (n: number) => "$" + Math.round(n).toLocaleString();
 const careDate = (s: string) => new Date(s + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -69,6 +69,23 @@ export function Care() {
             <ul className="earn">{t.advice.map((a, i) => <li key={i}>{a}</li>)}</ul>
             <div className="earn-foot">General guidance only. Follow your dentist's instructions for your treatment.</div>
           </div>
+
+          {(CARE_PRODUCTS[t.name] ?? []).length > 0 && (
+            <div className="panel-lite">
+              <div className="pl-title">Suggested for your recovery</div>
+              <div className="prod-grid">
+                {CARE_PRODUCTS[t.name].map((p, i) => (
+                  <motion.a key={i} className="prod" href={amazonSearch(p.query)} target="_blank" rel="noopener noreferrer"
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} whileHover={{ y: -3 }}>
+                    <div className={`prod-ic ${p.kind}`}>{p.emoji}</div>
+                    <div className="prod-label">{p.label}</div>
+                    <div className="prod-link">View on Amazon →</div>
+                  </motion.a>
+                ))}
+              </div>
+              <div className="earn-foot">Suggestions only — not endorsements, and not medical advice. These are general comfort/aftercare items; follow your dentist's instructions, and ask them before taking any medication.</div>
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 

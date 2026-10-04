@@ -106,3 +106,38 @@ export const CARE_TREATMENTS: CareTreatment[] = [
       "Keep your regular cleanings every 6 months, and wear your retainer as directed once the braces come off."],
   },
 ];
+
+import type { Account } from "../lib/api";
+export const ACCOUNT_FALLBACK: Account = {
+  account_id: "ACME-0007", employer: "Acme Co", plan_name: "Lincoln Dental PPO", guardian_id: "demo",
+  members: [
+    { member_id: "demo", name: "Jordan Lee", relationship: "guardian", age: null, annual_maximum: 2000, benefits_used: 550, benefits_remaining: 1450, percent_used: 27.5, state: "plenty_remaining" },
+    { member_id: "demo-child", name: "Riley Lee", relationship: "dependent", age: 9, annual_maximum: 2000, benefits_used: 220, benefits_remaining: 1780, percent_used: 11, state: "plenty_remaining" },
+  ],
+};
+
+// --- Care aftercare product suggestions (Amazon category-search links; icons, not product photos) ---
+export interface CareProduct { label: string; emoji: string; query: string; kind: "food" | "care"; }
+export const CARE_PRODUCTS: Record<string, CareProduct[]> = {
+  "Teeth whitening": [
+    { label: "Sensitivity relief toothpaste", emoji: "🪥", query: "sensitivity toothpaste", kind: "care" },
+    { label: "Soft-bristle toothbrush", emoji: "🪥", query: "soft bristle toothbrush", kind: "care" },
+    { label: "Reusable straws (less staining)", emoji: "🥤", query: "reusable stainless steel straws", kind: "care" },
+    { label: "Light-colored, low-acid snacks", emoji: "🍐", query: "low acid snacks", kind: "food" },
+  ],
+  "Dental implant": [
+    { label: "Protein shakes (soft nutrition)", emoji: "🥤", query: "protein shakes ready to drink", kind: "food" },
+    { label: "Greek yogurt", emoji: "🥣", query: "greek yogurt", kind: "food" },
+    { label: "Instant mashed potatoes", emoji: "🥔", query: "instant mashed potatoes", kind: "food" },
+    { label: "Reusable cold pack", emoji: "🧊", query: "reusable cold pack face", kind: "care" },
+    { label: "Sea salt (warm-water rinse)", emoji: "🧂", query: "fine sea salt", kind: "care" },
+    { label: "Interdental brushes", emoji: "🪥", query: "interdental brushes", kind: "care" },
+  ],
+  "Braces": [
+    { label: "Orthodontic wax", emoji: "🪵", query: "orthodontic wax", kind: "care" },
+    { label: "Floss threaders", emoji: "🧵", query: "floss threaders braces", kind: "care" },
+    { label: "Water flosser", emoji: "💧", query: "water flosser", kind: "care" },
+    { label: "Soft soups & broths", emoji: "🍲", query: "ready to eat soup", kind: "food" },
+  ],
+};
+export const amazonSearch = (q: string) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}`;
