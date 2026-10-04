@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { api, type Coverage, type ProcedureMatch, type PTORequest } from "../lib/api";
+import { api, type Coverage, type ProcedureMatch, type PTORequest, type ResearchBrief } from "../lib/api";
 import { MiniMap } from "../components/MiniMap";
 import { Icon } from "../components/bits";
 import { useProfile } from "../lib/profile";
@@ -29,13 +29,15 @@ const SEED: Msg[] = [
 
 const CHIPS = ["I need a root canal and a crown on tooth 14", "Is a cleaning fully covered?", "What will a deep cleaning cost?"];
 
-export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
+export function Assistant({ onOpenRadar, brief }: { onOpenRadar: () => void; brief: ResearchBrief | null }) {
   const { activeId, active } = useProfile();
   const [msgs, setMsgs] = useState<Msg[]>(SEED);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const toEnd = () => requestAnimationFrame(() => scroller.current?.scrollIntoView({ behavior: "smooth" }));
+
+  useEffect(() => { if (brief) toEnd(); }, [brief]);
 
   async function ask(text: string) {
     setMsgs((m) => [...m, { role: "user", text }]);
@@ -46,6 +48,7 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
       setMsgs((m) => [...m, { role: "ai", text: "I'm the demo assistant. Start the backend (**uvicorn main:app**) for a live estimate with your Lincoln Financial coverage and verified providers. Until then, try the sample above or browse dentists on the right." }]);
       toEnd(); return;
     }
+    if (out.research_pending) void api.runResearch();
     const receipts: Receipt[] = (out.procedures ?? []).flatMap((p) => {
       const cmp = out.comparisons?.[p.selected_code];
       return cmp ? [{ proc: p, cmp }] : [];
@@ -74,6 +77,11 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
               </motion.div>
             ))}
           </AnimatePresence>
+          {brief && (
+            <div className="a" aria-label="Research brief">
+              <AiMessage msg={{ role: "ai", text: `**While you were away, I looked into your ${(brief.procedures || brief.codes || []).join(", ").toLowerCase()}:**\n\n${brief.brief || ""}\n\n${brief.disclaimer || ""}` }} activeId={activeId} onOpenRadar={onOpenRadar} />
+            </div>
+          )}
           {typing && (
             <motion.div className="a" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="row"><div className="badge-ai"><Icon.Sparkle /></div><div className="bubble typing"><span /><span /><span /></div></div>

@@ -7,9 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, PaymentPlanCreate,
                      PreAuthCreate, PTOCreate, RedeemRequest)
+from services import bedrock_agent, brief_store
 from services import payment_plans as pp_svc
-from services import pto as pto_svc
 from services import preauth as preauth_svc
+from services import pto as pto_svc
+from services import research
 from services import rewards as rewards_svc
 from services import tools
 from services.procedures import interpret
@@ -90,20 +92,43 @@ def care_plan(req: CarePlanRequest):
 
 @app.post("/api/v1/agent/message")
 def agent_message(req: AgentMessage):
-    member = member_of(req.member_id)
-    from services import bedrock
+    # Guardrails first: emergencies, PII, off-topic (clinical urgency before finances).
+    member_of(req.member_id)
     from services.guardrails import screen_input
     screen = screen_input(req.message)
     if screen.urgent:
         return {"status": "EMERGENCY", "message": screen.message, "urgent": True, "via": "guardrail"}
     if not screen.ok:
         return {"status": "NEEDS_INFORMATION", "message": screen.message, "via": "guardrail"}
-    if bedrock.enabled():
+    # When a Bedrock model is configured (BEDROCK_MODEL_ID), use the Converse tool-use
+    # orchestrator; otherwise fall back to the deterministic rule-based supervisor. If the
+    # Bedrock call fails at runtime, degrade gracefully to the supervisor rather than erroring.
+    if bedrock_agent.bedrock_enabled():
         try:
-            return bedrock.run_estimation_agent(screen.text, member, req.today)
-        except Exception:
-            pass  # fall back to the deterministic rule-based supervisor
-    return run(req.message, member_id=req.member_id, today=req.today, session_id=req.session_id)
+            result = bedrock_agent.run(screen.text, member_id=req.member_id, today=req.today, session_id=req.session_id)
+        except Exception as exc:  # pragma: no cover - exercised only with a live/broken AWS config
+            result = run(req.message, member_id=req.member_id, today=req.today, session_id=req.session_id)
+            result["engine"] = "supervisor"
+            result["bedrock_error"] = str(exc)
+        # Once a procedure is identified, record a brief to research; the page then calls
+        # POST /research/{session_id}/run (serverless can't run work after the response).
+        result["research_pending"] = research.queue(req.session_id, result, req.message, req.today)
+        return result
+    result = run(req.message, member_id=req.member_id, today=req.today, session_id=req.session_id)
+    result["engine"] = "supervisor"
+    return result
+
+
+@app.get("/api/v1/research/{session_id}")
+def research_brief(session_id: str):
+    return brief_store.get(session_id) or {"status": "NONE"}
+
+
+@app.post("/api/v1/research/{session_id}/run")
+def research_run(session_id: str):
+    # Runs the queued brief inside this request (~30-45s). Safe to call twice: only the caller
+    # that wins the claim does the work.
+    return {"status": research.run_pending(session_id)["status"]}
 
 
 @app.get("/api/v1/rewards")

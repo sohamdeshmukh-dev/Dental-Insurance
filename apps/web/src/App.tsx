@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Logo } from "./components/bits";
 import { ProfileProvider, useProfile } from "./lib/profile";
@@ -8,6 +8,8 @@ import { Rewards } from "./views/Rewards";
 import { Care } from "./views/Care";
 import { Payments } from "./views/Payments";
 import { Radar } from "./components/Radar";
+
+import { api, store, type ResearchBrief } from "./lib/api";
 
 type View = "assistant" | "dashboard" | "rewards" | "care" | "payments";
 const NAV: { id: View; label: string }[] = [
@@ -59,6 +61,32 @@ function ProfileSwitcher() {
 function Shell() {
   const [view, setView] = useState<View>("assistant");
   const [radar, setRadar] = useState(false);
+  const [brief, setBrief] = useState<ResearchBrief | null>(null);
+  const [briefNotice, setBriefNotice] = useState(false);
+  const shownBrief = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function checkResearch() {
+      const result = await api.research();
+      if (!active || result?.status !== "READY" || !result.created_at ||
+          result.created_at === store.get("brief_seen") || result.created_at === shownBrief.current) return;
+      shownBrief.current = result.created_at;
+      setBrief(result);
+      setBriefNotice(true);
+    }
+    void checkResearch();
+    const timer = setInterval(checkResearch, 15000);
+    return () => { active = false; clearInterval(timer); };
+  }, []);
+
+  function readBrief() {
+    if (brief?.created_at) store.set("brief_seen", brief.created_at);
+    setBriefNotice(false);
+    setRadar(false);
+    setView("assistant");
+  }
+
   return (
     <>
       <header className="hdr">
@@ -79,13 +107,20 @@ function Shell() {
 
       <AnimatePresence mode="wait">
         <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
-          {view === "assistant" && <Assistant onOpenRadar={() => setRadar(true)} />}
+          {view === "assistant" && <Assistant onOpenRadar={() => setRadar(true)} brief={brief} />}
           {view === "dashboard" && <Dashboard />}
           {view === "rewards" && <Rewards />}
           {view === "care" && <Care />}
           {view === "payments" && <Payments />}
         </motion.div>
       </AnimatePresence>
+
+      {briefNotice && brief && (
+        <button className="brief-note" onClick={readBrief}>
+          <span role="status">New research on your {(brief.procedures || brief.codes || []).join(", ").toLowerCase()}</span>
+          <span>Tap to read it in Ask AI</span>
+        </button>
+      )}
 
       <footer>
         <div className="l"><span className="dot" />Dental benefits administered by <strong style={{ color: "var(--brand)", fontWeight: 600, marginLeft: 3 }}>Lincoln Financial</strong></div>
