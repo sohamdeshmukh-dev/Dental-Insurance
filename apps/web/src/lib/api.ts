@@ -55,17 +55,26 @@ async function postJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | 
   } catch { return null; }
 }
 
+export type Relationship = "guardian" | "dependent";
+export interface MemberSummary {
+  member_id: string; name: string; relationship: Relationship; age: number | null;
+  annual_maximum: number; benefits_used: number; benefits_remaining: number; percent_used: number;
+  state: "plenty_remaining" | "moderate_utilization" | "near_annual_maximum";
+}
+export interface Account { account_id: string; employer: string; plan_name: string; guardian_id: string; members: MemberSummary[]; }
+
 export const api = {
-  agent: (message: string) => postJSON<AgentResponse>("/api/v1/agent/message", { message }),
+  account: () => getJSON<Account>("/api/v1/account"),
+  agent: (message: string, member = "demo") => postJSON<AgentResponse>("/api/v1/agent/message", { message, member_id: member }),
   providers: (zip: string) =>
     getJSON<{ providers: { provider: Omit<Provider, "network_status" | "distance_miles">; network_status: Provider["network_status"]; distance_miles: number }[] }>(
       `/api/v1/providers?zip_code=${zip}&radius=15&include_out_of_network=true`,
     ),
-  timeline: () => getJSON<Timeline>("/api/v1/benefits/timeline"),
-  rewards: () => getJSON<Rewards>("/api/v1/rewards"),
-  redeem: (item_id: string) =>
+  timeline: (member = "demo") => getJSON<Timeline>(`/api/v1/benefits/timeline?member_id=${member}`),
+  rewards: (member = "demo") => getJSON<Rewards>(`/api/v1/rewards?member_id=${member}`),
+  redeem: (item_id: string, member = "demo") =>
     postJSON<{ ok: boolean; message: string; points_balance: number; sweepstakes_entries: number }>(
-      "/api/v1/rewards/redeem", { item_id }, 2000,
+      "/api/v1/rewards/redeem", { item_id, member_id: member }, 2000,
     ),
 };
 

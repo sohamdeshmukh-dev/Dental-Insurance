@@ -65,8 +65,26 @@ def get_funding_timeline(plan: DentalPlan, member: Member, today: date):
     return benefits.get_funding_timeline(plan, member, today)
 
 
-def get_rewards(plan: DentalPlan, member: Member, lifetime_bonus: int = 1180,
+def get_rewards(plan: DentalPlan, member: Member, lifetime_bonus: int | None = None,
                 redeemed_points: int = 0, extra_entries: int = 0):
     from services import rewards
+    # Guardian has prior-year lifetime points (demo); dependents start fresh this year.
+    if lifetime_bonus is None:
+        lifetime_bonus = 1180 if member.relationship == "guardian" else 0
     return rewards.compute_rewards(plan, member, lifetime_bonus=lifetime_bonus,
                                    redeemed_points=redeemed_points, extra_entries=extra_entries)
+
+
+def get_account():
+    from data.mock import ACCOUNT
+    from schemas import Account, MemberSummary
+    members = []
+    for mid in ACCOUNT["member_ids"]:
+        m = MEMBERS[mid]
+        u = benefits.get_benefit_usage(PLAN, m)
+        members.append(MemberSummary(
+            member_id=m.member_id, name=m.name, relationship=m.relationship, age=m.age,
+            annual_maximum=u.annual_maximum, benefits_used=u.benefits_used,
+            benefits_remaining=u.benefits_remaining, percent_used=u.percent_used, state=u.state))
+    return Account(account_id=ACCOUNT["account_id"], employer=ACCOUNT["employer"], plan_name=PLAN.plan_name,
+                   guardian_id=ACCOUNT["guardian_id"], members=members)

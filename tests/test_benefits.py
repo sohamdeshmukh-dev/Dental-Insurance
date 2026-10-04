@@ -6,8 +6,8 @@ from services.benefits import create_reminder
 
 def test_usage_state_and_remaining():
     u = tools.get_benefit_usage(tools.get_plan_details("LFG-123"), tools.get_member("demo"))
-    assert u.benefits_remaining == 950
-    assert u.percent_used == 36.7
+    assert u.benefits_remaining == 1450
+    assert u.percent_used == 27.5
     assert u.state == "plenty_remaining"
 
 

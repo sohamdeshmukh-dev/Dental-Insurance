@@ -17,8 +17,8 @@ def test_funding_timeline_cumulative_matches_benefits_used():
     cums = [m.cumulative_used for m in tl.months]
     assert cums == sorted(cums)
     # remaining never goes negative, ends at annual_max - used
-    assert tl.months[-1].remaining == 1500 - 550
-    assert tl.benefits_remaining == 950
+    assert tl.months[-1].remaining == 2000 - 550
+    assert tl.benefits_remaining == 1450
 
 
 def test_funding_by_category_sums_to_used():

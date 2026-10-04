@@ -14,12 +14,22 @@ from services.supervisor import compare_networks, run
 app = FastAPI(title="Dental Benefits Optimizer API", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-MEMBER_ID = "demo"
+
+def member_of(member_id: str):
+    try:
+        return tools.get_member(member_id)
+    except KeyError:
+        raise HTTPException(404, f"Unknown member {member_id}")
 
 
 @app.get("/health")
 def health():
     return {"status": "ok", "calculation_version": tools.coverage.CALC_VERSION}
+
+
+@app.get("/api/v1/account")
+def account():
+    return tools.get_account().model_dump()
 
 
 @app.post("/api/v1/procedures/interpret")
@@ -31,10 +41,10 @@ def interpret_procedure(req: InterpretRequest):
 def estimate(req: EstimateRequest):
     try:
         plan = tools.get_plan_details(req.plan_id)
-        member = tools.get_member(MEMBER_ID)
-        both = compare_networks(plan, member, req.procedure_code, date.today())
     except KeyError as e:
         raise HTTPException(404, str(e))
+    member = member_of(req.member_id)
+    both = compare_networks(plan, member, req.procedure_code, date.today())
     return {"in_network": both["in"].model_dump(), "out_of_network": both["out"].model_dump()}
 
 
@@ -51,16 +61,21 @@ def get_providers(zip_code: str = Query("19122"), radius: float = 10, procedure:
 
 
 @app.get("/api/v1/benefits/usage")
-def usage():
+def usage(member_id: str = Query("demo")):
     plan = tools.get_plan_details("LFG-123")
-    member = tools.get_member(MEMBER_ID)
-    return tools.get_benefit_usage(plan, member).model_dump()
+    return tools.get_benefit_usage(plan, member_of(member_id)).model_dump()
+
+
+@app.get("/api/v1/benefits/timeline")
+def benefits_timeline(member_id: str = Query("demo")):
+    plan = tools.get_plan_details("LFG-123")
+    return tools.get_funding_timeline(plan, member_of(member_id), date.today()).model_dump()
 
 
 @app.post("/api/v1/care-plan/optimize")
 def care_plan(req: CarePlanRequest):
     plan = tools.get_plan_details("LFG-123")
-    member = tools.get_member(MEMBER_ID)
+    member = member_of(req.member_id)
     try:
         cp = tools.optimize_treatment_sequence(plan, member, req.codes, set(req.urgent_codes), req.network,
                                                req.today or date.today())
@@ -71,27 +86,18 @@ def care_plan(req: CarePlanRequest):
 
 @app.post("/api/v1/agent/message")
 def agent_message(req: AgentMessage):
-    return run(req.message, today=req.today, session_id=req.session_id)
-
-
-@app.get("/api/v1/benefits/timeline")
-def benefits_timeline():
-    plan = tools.get_plan_details("LFG-123")
-    member = tools.get_member(MEMBER_ID)
-    return tools.get_funding_timeline(plan, member, date.today()).model_dump()
+    return run(req.message, member_id=req.member_id, today=req.today, session_id=req.session_id)
 
 
 @app.get("/api/v1/rewards")
-def rewards():
+def rewards(member_id: str = Query("demo")):
     plan = tools.get_plan_details("LFG-123")
-    member = tools.get_member(MEMBER_ID)
-    return tools.get_rewards(plan, member).model_dump()
+    return tools.get_rewards(plan, member_of(member_id)).model_dump()
 
 
 @app.post("/api/v1/rewards/redeem")
 def rewards_redeem(req: RedeemRequest):
     plan = tools.get_plan_details("LFG-123")
-    member = tools.get_member(MEMBER_ID)
-    profile = tools.get_rewards(plan, member)
+    profile = tools.get_rewards(plan, member_of(req.member_id))
     ok, msg, bal, entries = rewards_svc.redeem(profile, req.item_id)
     return {"ok": ok, "message": msg, "points_balance": bal, "sweepstakes_entries": entries}

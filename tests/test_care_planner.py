@@ -25,6 +25,6 @@ def test_urgent_overrides_financial_optimization():
 
 def test_non_urgent_may_defer_to_next_year():
     m = member()
-    m.benefits_used = 1450  # 50 remaining -> next year cheaper
+    m.benefits_used = 1750  # 250 remaining of $2,000 -> next year cheaper
     cp = tools.optimize_treatment_sequence(PLAN, m, ["D2740"], set(), "in", date(2026, 11, 1))
     assert cp.items[0].plan_year == 2027

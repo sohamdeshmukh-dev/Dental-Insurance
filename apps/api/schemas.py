@@ -60,16 +60,42 @@ class PaidClaim(BaseModel):
     network: NetworkStatus = "in"
 
 
+Relationship = Literal["guardian", "dependent"]
+
+
 class Member(BaseModel):
     member_id: str
     plan_id: str
     zip_code: str
     coverage_effective_date: date
+    name: str = "Member"
+    relationship: Relationship = "guardian"
+    age: Optional[int] = None
     benefits_used: float = 0
     benefits_pending: float = 0
     deductible_remaining: float = 0
     history: list[ServiceRecord] = []
     claims: list[PaidClaim] = []
+
+
+class MemberSummary(BaseModel):
+    member_id: str
+    name: str
+    relationship: Relationship
+    age: Optional[int] = None
+    annual_maximum: float
+    benefits_used: float
+    benefits_remaining: float
+    percent_used: float
+    state: Literal["plenty_remaining", "moderate_utilization", "near_annual_maximum"]
+
+
+class Account(BaseModel):
+    account_id: str
+    employer: str
+    plan_name: str
+    guardian_id: str
+    members: list[MemberSummary]
 
 
 class Procedure(BaseModel):
@@ -182,6 +208,7 @@ class CarePlanRequest(BaseModel):
     urgent_codes: list[str] = []
     network: NetworkStatus = "in"
     today: Optional[date] = None
+    member_id: str = "demo"
 
 
 class EstimateRequest(BaseModel):
@@ -189,6 +216,7 @@ class EstimateRequest(BaseModel):
     procedure_code: str
     provider_id: Optional[str] = None
     zip_code: Optional[str] = None
+    member_id: str = "demo"
 
 
 class InterpretRequest(BaseModel):
@@ -199,6 +227,7 @@ class AgentMessage(BaseModel):
     session_id: Optional[str] = None
     message: str
     today: Optional[date] = None
+    member_id: str = "demo"
 
 
 class Claim(BaseModel):
@@ -303,6 +332,7 @@ class RewardsProfile(BaseModel):
 
 class RedeemRequest(BaseModel):
     item_id: str
+    member_id: str = "demo"
 
 
 class RedeemResult(BaseModel):

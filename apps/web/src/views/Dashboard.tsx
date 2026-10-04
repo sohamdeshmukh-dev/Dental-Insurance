@@ -3,13 +3,39 @@ import { motion } from "framer-motion";
 import { api, type Timeline } from "../lib/api";
 import { TIMELINE_FALLBACK } from "../data/fallback";
 import { Money } from "../components/bits";
+import { useProfile } from "../lib/profile";
 
 const CAT_COLORS: Record<string, string> = { preventive: "var(--in)", basic: "var(--brand-600)", major: "var(--accent)", ortho: "#8A5A00" };
+const STATE_LABEL: Record<string, [string, string]> = {
+  plenty_remaining: ["Plenty remaining", "var(--in)"], moderate_utilization: ["Moderate", "#B8860B"], near_annual_maximum: ["Near max", "var(--accent)"],
+};
 
 export function Dashboard() {
+  const { account, active, activeId, isGuardian, setActiveId } = useProfile();
   const [d, setD] = useState<Timeline | null>(null);
-  useEffect(() => { api.timeline().then((t) => setD(t ?? TIMELINE_FALLBACK)); }, []);
-  if (!d) return <div className="view"><div className="loading">Loading your benefits…</div></div>;
+  useEffect(() => { setD(null); api.timeline(activeId).then((t) => setD(t ?? TIMELINE_FALLBACK)); }, [activeId]);
+
+  const family = isGuardian && account.members.length > 1 && (
+    <div className="panel-lite" style={{ marginTop: 0, marginBottom: 18 }}>
+      <div className="pl-title">Your family · benefits monitoring</div>
+      <div className="family-grid">
+        {account.members.map((m) => {
+          const [lbl, col] = STATE_LABEL[m.state];
+          return (
+            <button className={`fam${m.member_id === activeId ? " on" : ""}`} key={m.member_id} onClick={() => setActiveId(m.member_id)}>
+              <div className="fam-top"><div className="ava sm">{m.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}</div>
+                <div><b>{m.name}</b><span>{m.relationship === "guardian" ? "You" : `Dependent · ${m.age}`}</span></div>
+                <span className="fam-state" style={{ color: col }}>{lbl}</span></div>
+              <div className="gauge" style={{ height: 8 }}><motion.div className="gauge-fill" initial={{ width: 0 }} animate={{ width: `${m.percent_used}%` }} transition={{ duration: 0.8 }} /></div>
+              <div className="fam-cap"><span><Money value={m.benefits_remaining} /> of <Money value={m.annual_maximum} /> left</span></div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  if (!d) return <div className="view">{family}<div className="loading">Loading benefits…</div></div>;
 
   const pctUsed = Math.round(d.percent_used);
   const state = pctUsed < 50 ? ["Plenty remaining", "var(--in)"] : pctUsed < 80 ? ["Moderate utilization", "#B8860B"] : ["Near annual maximum", "var(--accent)"];
@@ -24,8 +50,9 @@ export function Dashboard() {
 
   return (
     <motion.div className="view" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      {family}
       <div className="d-head">
-        <div><div className="d-title">Your Lincoln Financial funding</div><div className="d-sub">Plan year ends {endDate}</div></div>
+        <div><div className="d-title">{isGuardian ? "Your Lincoln Financial funding" : `${active.name}'s dental funding`}</div><div className="d-sub">Plan year ends {endDate}</div></div>
         <span className="pill-state" style={{ color: state[1], borderColor: state[1] }}>{state[0]}</span>
       </div>
 

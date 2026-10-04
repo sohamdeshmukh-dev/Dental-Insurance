@@ -24,12 +24,12 @@ def test_major_in_network_crown_math():
 
 def test_annual_maximum_caps_payment():
     m = member()
-    m.benefits_used = 1100  # only 400 remaining
+    m.benefits_used = 1700  # only 300 remaining of the $2,000 max
     r = tools.calculate_coverage(PLAN, m, "D2740", "in", date(2026, 10, 1))
     assert r.plan_payment_before_max == 525
-    assert r.plan_payment == 400
+    assert r.plan_payment == 300
     assert r.annual_max_applied
-    assert r.member_payment == 700  # 1100 - 400
+    assert r.member_payment == 800  # 1100 - 300
 
 
 def test_preventive_exempt_from_deductible_full_coverage():

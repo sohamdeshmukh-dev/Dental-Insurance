@@ -106,3 +106,12 @@ export const CARE_TREATMENTS: CareTreatment[] = [
       "Keep your regular cleanings every 6 months, and wear your retainer as directed once the braces come off."],
   },
 ];
+
+import type { Account } from "../lib/api";
+export const ACCOUNT_FALLBACK: Account = {
+  account_id: "ACME-0007", employer: "Acme Co", plan_name: "Lincoln Dental PPO", guardian_id: "demo",
+  members: [
+    { member_id: "demo", name: "Jordan Lee", relationship: "guardian", age: null, annual_maximum: 2000, benefits_used: 550, benefits_remaining: 1450, percent_used: 27.5, state: "plenty_remaining" },
+    { member_id: "demo-child", name: "Riley Lee", relationship: "dependent", age: 9, annual_maximum: 2000, benefits_used: 220, benefits_remaining: 1780, percent_used: 11, state: "plenty_remaining" },
+  ],
+};

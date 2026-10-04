@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { api, type Coverage, type ProcedureMatch } from "../lib/api";
 import { MiniMap } from "../components/MiniMap";
 import { Icon } from "../components/bits";
+import { useProfile } from "../lib/profile";
 
 const money = (n: number) => "$" + Math.round(n).toLocaleString();
 const md = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n\n/g, "<br/><br/>");
@@ -29,6 +30,7 @@ const SEED: Msg[] = [
 const CHIPS = ["I need a root canal and a crown on tooth 14", "Is a cleaning fully covered?", "What will a deep cleaning cost?"];
 
 export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
+  const { activeId } = useProfile();
   const [msgs, setMsgs] = useState<Msg[]>(SEED);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -38,7 +40,7 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
   async function ask(text: string) {
     setMsgs((m) => [...m, { role: "user", text }]);
     setTyping(true); toEnd();
-    const out = await api.agent(text);
+    const out = await api.agent(text, activeId);
     setTyping(false);
     if (!out) {
       setMsgs((m) => [...m, { role: "ai", text: "I'm the demo assistant. Start the backend (**uvicorn main:app**) for a live estimate with your Lincoln Financial coverage and verified providers. Until then, try the sample above or browse dentists on the right." }]);
