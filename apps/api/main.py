@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, PaymentPlanCreate,
-                     PreAuthCreate, PTOCreate, RedeemRequest)
+                     PreAuthCreate, PTOCreate, RedeemRequest, WorkScheduleUpdate)
 from services import bedrock_agent, brief_store
 from services import payment_plans as pp_svc
 from services import preauth as preauth_svc
@@ -118,7 +118,13 @@ def agent_message(req: AgentMessage):
     member_of(req.member_id)
     screen = screen_input(req.message)
     if screen.urgent:
-        return {"status": "EMERGENCY", "message": screen.message, "urgent": True, "via": "guardrail"}
+        resp = {"status": "EMERGENCY", "message": screen.message, "urgent": True, "via": "guardrail"}
+        # Clinical urgency first; if the emergency falls in the member's work hours, also offer to
+        # draft (never auto-submit) a time-off request so care isn't delayed over scheduling.
+        proposal = pto_svc.propose_emergency_pto(req.member_id, req.today or date.today())
+        if proposal is not None:
+            resp["pto_proposal"] = proposal.model_dump()
+        return resp
     if not screen.ok:
         return {"status": "NEEDS_INFORMATION", "message": screen.message, "via": "guardrail"}
     # When a Bedrock model is configured (BEDROCK_MODEL_ID), use the Converse tool-use
@@ -239,12 +245,44 @@ def payment_plan_decision(pp_id: str, approve: bool = Query(True), member_id: st
 @app.post("/api/v1/pto")
 def pto_create(req: PTOCreate):
     member_of(req.member_id)
-    return pto_svc.create(req).model_dump()
+    try:
+        return pto_svc.create(req).model_dump()
+    except ValueError as e:  # insufficient PTO balance
+        raise HTTPException(400, str(e))
 
 
 @app.get("/api/v1/pto")
 def pto_list(member_id: str = Query("demo")):
     return {"requests": [r.model_dump() for r in pto_svc.list_for(member_of(member_id).member_id)]}
+
+
+@app.get("/api/v1/pto/balance")
+def pto_balance(member_id: str = Query("demo")):
+    member_of(member_id)
+    try:
+        return pto_svc.get_balance(member_id).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"No PTO balance on file for {member_id}")
+
+
+@app.get("/api/v1/employee/schedule")
+def employee_schedule(member_id: str = Query("demo")):
+    member_of(member_id)
+    try:
+        return pto_svc.get_schedule(member_id).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"No work schedule on file for {member_id}")
+
+
+@app.put("/api/v1/employee/schedule")
+def employee_schedule_update(upd: WorkScheduleUpdate):
+    member_of(upd.member_id)
+    try:
+        return pto_svc.update_schedule(upd).model_dump()
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.post("/api/v1/pto/{pto_id}/decide")

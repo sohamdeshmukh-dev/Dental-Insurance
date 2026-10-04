@@ -4,6 +4,7 @@ import { api, type Timeline } from "../lib/api";
 import { TIMELINE_FALLBACK } from "../data/fallback";
 import { Money } from "../components/bits";
 import { useProfile } from "../lib/profile";
+import { Employee } from "./Employee";
 
 const CAT_COLORS: Record<string, string> = { preventive: "var(--in)", basic: "var(--brand-600)", major: "var(--accent)", ortho: "#8A5A00" };
 const STATE_LABEL: Record<string, [string, string]> = {
@@ -13,7 +14,17 @@ const STATE_LABEL: Record<string, [string, string]> = {
 export function Dashboard() {
   const { account, active, activeId, isGuardian, setActiveId } = useProfile();
   const [d, setD] = useState<Timeline | null>(null);
+  const [tab, setTab] = useState<"funding" | "timeoff">("funding");
   useEffect(() => { setD(null); api.timeline(activeId).then((t) => setD(t ?? TIMELINE_FALLBACK)); }, [activeId]);
+
+  const tabs = (
+    <div className="subtabs">
+      <button className={`subtab${tab === "funding" ? " on" : ""}`} onClick={() => setTab("funding")}>Funding</button>
+      <button className={`subtab${tab === "timeoff" ? " on" : ""}`} onClick={() => setTab("timeoff")}>Time Off</button>
+    </div>
+  );
+
+  if (tab === "timeoff") return <div className="view">{tabs}<Employee /></div>;
 
   const family = isGuardian && account.members.length > 1 && (
     <div className="panel-lite" style={{ marginTop: 0, marginBottom: 18 }}>
@@ -35,7 +46,7 @@ export function Dashboard() {
     </div>
   );
 
-  if (!d) return <div className="view">{family}<div className="loading">Loading benefits…</div></div>;
+  if (!d) return <div className="view">{tabs}{family}<div className="loading">Loading benefits…</div></div>;
 
   const pctUsed = Math.round(d.percent_used);
   const state = pctUsed < 50 ? ["Plenty remaining", "var(--in)"] : pctUsed < 80 ? ["Moderate utilization", "#B8860B"] : ["Near annual maximum", "var(--accent)"];
@@ -50,6 +61,7 @@ export function Dashboard() {
 
   return (
     <motion.div className="view" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      {tabs}
       {family}
       <div className="d-head">
         <div><div className="d-title">{isGuardian ? "Your Lincoln Financial funding" : `${active.name}'s dental funding`}</div><div className="d-sub">Plan year ends {endDate}</div></div>

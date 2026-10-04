@@ -300,3 +300,54 @@ footer .r{font-size:12px;color:var(--faint);}
 .brief-note{position:fixed;top:72px;right:16px;z-index:60;max-width:min(320px,calc(100vw - 32px));text-align:left;border:none;cursor:pointer;background:var(--brand);color:#fff;font:inherit;font-size:13px;font-weight:600;padding:12px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);}
 .brief-note span{display:block;}
 .brief-note span+span{font-weight:400;opacity:.85;margin-top:2px;}
+
+/* ---- Dashboard sub-tabs ---- */
+.subtabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line);}
+.subtab{appearance:none;background:none;border:none;font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;padding:9px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.subtab:hover{color:var(--brand);}
+.subtab.on{color:var(--brand);border-bottom-color:var(--accent);}
+
+/* ---- Employee / Time Off (Workday-style, blue demo theme) ---- */
+.wd{--wd:#0875E1;--wd-700:#0a5fb4;--wd-tint:#EAF3FD;}
+.wd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+.wd-chip{font-size:11px;font-weight:700;color:var(--wd-700);background:var(--wd-tint);border:1px solid #CDE4FA;border-radius:999px;padding:5px 11px;white-space:nowrap;}
+.wd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.wd-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);}
+.wd-card-t{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.wd-asof{font-size:11px;font-weight:500;color:var(--faint);}
+.wd-link{appearance:none;background:none;border:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--wd);cursor:pointer;padding:0;}
+.wd-bal{display:flex;align-items:baseline;gap:8px;}
+.wd-bal b{font-size:30px;font-weight:700;color:var(--ink);}
+.wd-bal span{font-size:13px;color:var(--muted);}
+.wd-fill{background:linear-gradient(90deg,var(--wd),var(--wd-700))!important;}
+.wd-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--muted);}
+.wd-legend span{display:inline-flex;align-items:center;gap:6px;}
+.wd-dot{width:9px;height:9px;border-radius:3px;display:inline-block;}
+.wd-dot.used{background:var(--wd);}.wd-dot.pend{background:#B8860B;}.wd-dot.acc{background:#D7E6F6;}
+.wd-days{display:flex;gap:6px;margin-bottom:14px;}
+.wd-day{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#F1F0ED;color:var(--faint);border:1px solid transparent;}
+.wd-day.on{background:var(--wd-tint);color:var(--wd-700);border-color:#CDE4FA;}
+.wd-days.edit .wd-day{cursor:pointer;appearance:none;font:inherit;font-weight:700;}
+.wd-dl{display:grid;gap:9px;margin:0;}
+.wd-dl div{display:flex;justify-content:space-between;gap:10px;font-size:13px;}
+.wd-dl dt{color:var(--muted);margin:0;}.wd-dl dd{margin:0;font-weight:600;color:var(--ink);}
+.wd-edit{display:grid;gap:12px;}
+.wd-f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted);}
+.wd-f input{font:inherit;font-weight:500;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
+.wd-f input:focus{outline:none;border-color:var(--wd);}
+.wd-f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.wd-err{font-size:12.5px;color:var(--accent);font-weight:600;}
+.wd-actions{display:flex;justify-content:flex-end;gap:8px;}
+.wd-btn{appearance:none;font:inherit;font-size:13px;font-weight:600;border:none;border-radius:10px;padding:9px 16px;cursor:pointer;background:var(--wd);color:#fff;}
+.wd-btn:hover{background:var(--wd-700);}
+.wd-btn.ghost{background:#fff;color:var(--muted);border:1px solid var(--line);}
+.wd-btn:disabled{opacity:.55;cursor:default;}
+.wd-empty{font-size:13px;color:var(--muted);}
+.wd-reqs{display:grid;gap:8px;}
+.wd-req{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;}
+.wd-req-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;font-size:13px;}
+.wd-req-main b{color:var(--ink);}
+.wd-req-main span{color:var(--muted);}
+.wd-req-reason{font-size:12px;}
+.wd-status{font-size:11px;font-weight:700;white-space:nowrap;}
+@media (max-width:720px){.wd-grid{grid-template-columns:1fr;}}
