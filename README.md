@@ -1,4 +1,4 @@
-# Dental Benefits Optimizer
+# Lincoln Dental Connect
 
 An **agentic benefits decision-support system** for the CodeLinc 11 challenge. It answers:
 *"I need this dental procedure — what will my plan cover, what might I pay, which nearby
