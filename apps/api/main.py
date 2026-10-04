@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date
 
 from fastapi import FastAPI, HTTPException, Query
@@ -85,7 +86,12 @@ def agent_message(req: AgentMessage):
             result["bedrock_error"] = str(exc)
         # Once a procedure is identified, record a brief to research; the page then calls
         # POST /research/{session_id}/run (serverless can't run work after the response).
-        result["research_pending"] = research.queue(req.session_id, result, req.message, req.today)
+        try:
+            result["research_pending"] = research.queue(req.session_id, result, req.message, req.today)
+        except Exception as exc:  # the brief store is optional; never fail the reply over it
+            logging.exception("research queue failed")
+            result["research_pending"] = False
+            result["research_error"] = type(exc).__name__
         return result
     result = run(req.message, today=req.today, session_id=req.session_id)
     result["engine"] = "supervisor"
