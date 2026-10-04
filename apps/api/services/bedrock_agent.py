@@ -1,7 +1,7 @@
 """AWS Bedrock Converse tool-use orchestrator — an OPTIONAL, additive alternative to the
 rule-based ``supervisor.run()``.
 
-Design contract (see AGENTS.md): the model INTERPRETS and NARRATES; it never calculates a
+Design contract (see CLAUDE.md): the model INTERPRETS and NARRATES; it never calculates a
 benefit number, price, network status, or balance. Every fact comes back from the
 deterministic services in ``services.tools``; the model may only decide *which* tool to call
 and explain the results it is handed.
@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import date
 from typing import Any, Callable, Optional
 
 from services import tools
+from services.guardrails import check_output, collect_facts
 from services.coverage import CALC_VERSION, in_network_savings
 from services.tracing import Tracer
 
@@ -203,6 +205,12 @@ def run(message: str, *, plan_id: str = "LFG-123", member_id: str = "demo",
     messages: list[dict] = [{"role": "user", "content": [{"text": message}]}]
     tool_calls: list[dict] = []
     final_text = ""
+    # Engine facts the narration may cite: tool results, plus figures the member themselves typed.
+    amounts: set[int] = set()
+    pcts: set[int] = set()
+    for n in re.findall(r"\d+", message.replace(",", "")):
+        amounts.add(int(n))
+        pcts.add(int(n))
 
     for _turn in range(MAX_TURNS):
         with tracer.span("bedrock", "converse", model_id, CALC_VERSION):
@@ -242,6 +250,7 @@ def run(message: str, *, plan_id: str = "LFG-123", member_id: str = "demo",
             tool_calls.append({"tool": name, "input": args, "status": status})
             # Round-trip through JSON so dates/Decimals are plain primitives for the model.
             payload = json.loads(json.dumps(result, default=_json_default))
+            collect_facts(payload, amounts, pcts)
             tool_results.append({"toolResult": {
                 "toolUseId": tool_use_id,
                 "content": [{"json": payload}],
@@ -252,6 +261,11 @@ def run(message: str, *, plan_id: str = "LFG-123", member_id: str = "demo",
         # Loop exhausted without a natural stop.
         final_text = final_text or "I wasn't able to finish putting this together. Please try rephrasing your request."
 
+    # Output guardrail: every $ / % the model wrote must trace back to an engine fact.
+    verified, unverified = check_output(final_text, amounts, pcts)
+    if not verified:
+        final_text += "\n\n(Please rely on the figures in your estimate; some numbers couldn't be verified.)"
+
     return {
         "status": "OK",
         "engine": "bedrock",
@@ -259,6 +273,7 @@ def run(message: str, *, plan_id: str = "LFG-123", member_id: str = "demo",
         "session_id": session_id,
         "explanation": final_text,
         "tool_calls": tool_calls,
+        "unverified_figures": unverified,
         "trace": [e.model_dump() for e in tracer.events],
         "disclaimer": "Estimates only — actual benefits are determined when the claim is processed.",
     }

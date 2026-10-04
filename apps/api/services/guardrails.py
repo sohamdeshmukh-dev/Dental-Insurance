@@ -17,7 +17,8 @@ DISCLAIMER = "Estimates only — actual benefits are determined when your claim 
 # Red-flag symptoms that need prompt in-person care — never financial optimization.
 _RED_FLAGS = re.compile(
     r"\b(can'?t breathe|difficulty breathing|trouble swallowing|can'?t swallow|"
-    r"facial swelling|swollen face|swelling (that )?spread|high fever|"
+    r"facial swelling|swollen face|swelling\b.{0,30}\bspread\w*|spread\w*\b.{0,30}\bswelling|"
+    r"(jaw|neck|throat|eye) swelling|swollen (jaw|neck|throat|eye)|high fever|"
     r"uncontroll\w* bleeding|bleeding (that )?(won'?t|will not) stop|"
     r"severe (pain|swelling)|knocked[- ]out tooth|knocked out|avuls\w+)\b", re.I)
 
@@ -36,10 +37,16 @@ _INJECTION = re.compile(
 _SSN = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 _LONG_NUM = re.compile(r"\b\d{9,}\b")  # policy / member / account numbers
 
+# Stems end in \w* so plurals/inflections match ("fillings", "braces", "cleaning").
 _DENTAL_HINT = re.compile(
-    r"\b(tooth|teeth|dental|dentist|crown|filling|root canal|clean|cavity|gum|molar|implant|"
-    r"brace|whiten|extract|x-?ray|exam|cover|coverage|benefit|plan|cost|deductible|estimate|"
-    r"pre-?auth|network|appointment|pay|owe)\b", re.I)
+    r"\b(tooth|teeth|dental\w*|dentist\w*|crown\w*|filling\w*|root canal\w*|clean\w*|cavit\w*|gum\w*|"
+    r"molar\w*|implant\w*|brace\w*|denture\w*|whiten\w*|extract\w*|x-?ray\w*|exam\w*|cover\w*|"
+    r"benefit\w*|insur\w*|plan\w*|cost\w*|deductible\w*|estimate\w*|pre-?auth\w*|network\w*|"
+    r"appointment\w*|provider\w*|procedure\w*|pay\w*|owe\w*)", re.I)
+
+# Short conversational replies ("yes", a ZIP code, "$500") continue an in-progress dental chat.
+_FOLLOW_UP = re.compile(
+    r"\s*(yes|yep|yeah|no|nope|ok(ay)?|sure|thanks?( you)?|please|\$?\d[\d,.]*|\d{5}(-\d{4})?)\s*[.!?]*\s*", re.I)
 
 
 @dataclass
@@ -71,7 +78,7 @@ def screen_input(text: str) -> InputResult:
     if _RED_FLAGS.search(text):
         return InputResult(ok=True, text=redacted, urgent=True, message=_EMERGENCY_MSG, notes=notes + ["red_flag"])
 
-    if not _DENTAL_HINT.search(text):
+    if not _DENTAL_HINT.search(text) and not _FOLLOW_UP.fullmatch(text):
         return InputResult(ok=False, text=redacted, notes=notes + ["off_topic"],
                            message="I can help with your dental benefits — describe a procedure, "
                                    "a cost question, or your plan, and I'll walk through it.")
@@ -98,6 +105,30 @@ def check_output(text: str, allowed_amounts: set[int], allowed_pcts: set[int]) -
         if v not in allowed_pcts:
             violations.append(m.strip())
     return (len(violations) == 0, violations)
+
+
+_PCT_KEY = re.compile(r"coinsurance|percent|pct|rate", re.I)
+
+
+def collect_facts(res, amounts: set[int], pcts: set[int]) -> None:
+    """Gather every number a tool returned, so model output can be verified against engine facts.
+
+    Any numeric tool value is a legitimate dollar figure; percent-like keys (coinsurance,
+    percent_used, ...) also feed the percent set (fractions <= 1 are scaled to percents).
+    """
+    if isinstance(res, dict):
+        for k, v in res.items():
+            if isinstance(v, bool):
+                continue
+            if isinstance(v, (int, float)):
+                amounts.add(round(v))
+                if _PCT_KEY.search(str(k)):
+                    pcts.add(round(v * 100) if abs(v) <= 1 else round(v))
+            else:
+                collect_facts(v, amounts, pcts)
+    elif isinstance(res, list):
+        for item in res:
+            collect_facts(item, amounts, pcts)
 
 
 def with_disclaimer(text: str) -> str:
