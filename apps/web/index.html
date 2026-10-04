@@ -219,6 +219,15 @@
   .tl-why{font-size:13px;color:#44423F;line-height:1.5;}
   .tl-tag{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--accent-700);background:var(--accent-tint);border-radius:999px;padding:3px 9px;}
   .tl-tag.alt{color:var(--brand);background:var(--brand-tint);}
+  /* care treatment tracker */
+  .care-tx{margin-bottom:30px;}
+  .care-count{font-size:13px;color:var(--muted);margin:3px 0 14px;}
+  .care-dots{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:20px;}
+  .care-dot{width:10px;height:10px;border-radius:999px;border:none;padding:0;background:#D8D2CC;cursor:pointer;transition:width .25s,background .25s;}
+  .care-dot:hover{background:var(--muted);}
+  .care-dot.on{width:44px;background:var(--brand);}
+  .ledger li.todo{color:var(--muted);}
+  .ledger li.todo b{color:var(--muted);}
 
   @media (max-width:760px){
     .stat-row{grid-template-columns:repeat(2,1fr);}
@@ -457,6 +466,7 @@
 
 <!-- ================= CARE PLAN ================= -->
 <section class="view" id="careView" aria-label="Care plan" hidden>
+  <div id="careBody"></div>
   <div class="d-head"><div>
     <div class="d-title">Your recommended care timeline</div>
     <div class="d-sub">Sequenced by clinical priority first, then to make the best use of your benefits.</div>
@@ -873,6 +883,101 @@ async function redeem(id){
   rtoast(res?res.message:"Redemption is a demo — connect the backend to apply it.");
 }
 function rtoast(msg){let t=document.getElementById("rwdToast");if(!t){t=document.createElement("div");t.id="rwdToast";t.className="rwd-toast";document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(rtoast._t);rtoast._t=setTimeout(()=>t.classList.remove("show"),2600);}
+
+// ---------- Care plan: multi-session treatment tracker (demo data) ----------
+// ponytail: treatments are static demo data in the page; move to an API + store when real office billing data exists.
+const monthly=(y,m,d,n,doneCount,label)=>Array.from({length:n},(_,i)=>({label:label(i+1),done:i<doneCount,
+  date:new Date(Date.UTC(y,m+i,d)).toISOString().slice(0,10)}));
+const CARE_TREATMENTS=[{
+  name:"Teeth whitening",detail:"In-office whitening course, 4 sessions",fee:480,insurance:0,paid:240,months:3,
+  coverage:"Cosmetic whitening is generally not covered by dental plans, so it does not use your annual maximum. The balance is owed to your dental office.",
+  sessions:[{label:"Session 1",date:"2026-09-05",done:true},{label:"Session 2",date:"2026-09-19",done:true},
+    {label:"Session 3",date:"2026-10-17",done:false},{label:"Session 4",date:"2026-10-31",done:false}],
+  advice:["Avoid sodas, coffee, tea, red wine, and dark sauces for 48 hours after each session. Teeth stain most easily right after whitening.",
+    "Sodas and sports drinks are also acidic, which can add to sensitivity. If you do have one, use a straw and rinse with water afterward.",
+    "Skip tobacco during the course. It stains quickly and undoes results.",
+    "Mild sensitivity for a day or two is common. Use a sensitivity toothpaste and avoid very hot or cold drinks.",
+    "Brush gently twice a day with a soft brush and keep up your regular cleanings.",
+    "Call your dentist if sensitivity or gum irritation lasts more than a few days."]},
+{
+  name:"Dental implant",detail:"Single implant, lower molar, 5 stages over about 6 months",fee:4200,insurance:950,paid:1500,months:12,
+  coverage:"Estimated insurance: $950, which is the remaining annual maximum on your plan. Implants are often a major service with limits, so actual claim processing determines final benefits.",
+  sessions:[{label:"Consult and 3D scan",date:"2026-08-12",done:true},{label:"Extraction and bone graft",date:"2026-08-26",done:true},
+    {label:"Implant placement",date:"2026-09-30",done:true},{label:"Healing check (bone integration)",date:"2026-12-02",done:false},
+    {label:"Abutment and crown",date:"2027-01-20",done:false}],
+  advice:["For the first 1 to 2 weeks after surgery, eat soft, cool foods like yogurt, eggs, and mashed potatoes. Avoid crunchy, hard, or very hot foods.",
+    "Do not use a straw, spit forcefully, or smoke. Suction and tobacco can dislodge the clot and slow healing.",
+    "Starting the day after surgery, rinse gently with warm salt water 2 to 3 times a day. Do not brush the surgical site until your dentist says so.",
+    "Swelling often peaks around day 2 or 3. Use a cold pack in the first 24 hours, then warmth, and keep your head elevated when resting.",
+    "Take pain medication and any antibiotics exactly as prescribed.",
+    "Once the crown is placed, clean around it like a natural tooth. Floss or use an interdental brush daily, since plaque around an implant can cause gum disease.",
+    "Call your dentist if you have a fever, swelling that keeps getting worse after day 3, bleeding that will not stop, or a loose implant."]},
+{
+  name:"Braces",detail:"Traditional metal braces, 24 monthly adjustment visits",fee:5400,insurance:1000,paid:1600,months:18,
+  coverage:"Estimated insurance: $1,000, a typical orthodontic lifetime maximum. Orthodontic benefits often have their own limits, so actual claim processing determines final benefits.",
+  sessions:monthly(2026,3,14,24,6,n=>n===1?"Braces placed":n===24?"Braces removed and retainers":`Adjustment ${n-1}`),
+  advice:["Avoid sticky and hard foods such as caramel, taffy, gum, ice, popcorn, and hard candy. They can break brackets and bend wires.",
+    "Cut firm foods like apples and carrots into small pieces and chew with your back teeth.",
+    "Brush after every meal and before bed. Floss daily using floss threaders, or try a water flosser, to clean around wires.",
+    "Limit soda and sugary drinks. Sugar sitting around brackets can leave permanent white spots when the braces come off.",
+    "Wear rubber bands (elastics) exactly as instructed. Skipping them adds months to treatment.",
+    "Keep orthodontic wax with you for poking wires, and call your orthodontist if a bracket or wire breaks.",
+    "Keep your regular cleanings every 6 months, and wear your retainer as directed once the braces come off."]}];
+const careDate=s=>new Date(s+"T00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+function careSummary(t){
+  const done=t.sessions.filter(s=>s.done).length, left=t.sessions.length-done;
+  return {done,left,balance:Math.max(0,t.fee-t.insurance-t.paid),next:t.sessions.find(s=>!s.done)};
+}
+let careIdx=0;
+function renderCare(){
+  const n=CARE_TREATMENTS.length, t=CARE_TREATMENTS[careIdx];
+  document.getElementById("careBody").innerHTML=(()=>{
+    const {done,left,balance,next}=careSummary(t), total=t.sessions.length;
+    const pay=balance===0?["Paid in full. Nothing owed."]:[
+      `<b>Pay in full</b>: ${money0(balance)} today`,
+      ...(left>1&&left<=6?[`<b>Pay per visit</b>: about ${money0(balance/left)} at each of your ${left} remaining sessions`]:[]),
+      `<b>Monthly plan</b>: ${t.months} payments of about ${money0(balance/t.months)} (ask your office about terms)`];
+    const shown=total>8?t.sessions.filter(s=>!s.done).slice(0,4):t.sessions;
+    const more=total>8?left-shown.length:0;
+    return `<div class="care-tx">
+    <div class="d-title" aria-live="polite">${t.name}</div>
+    <div class="care-count">Treatment ${careIdx+1} of ${n} · ${t.detail}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-k">Sessions completed</div><div class="stat-v">${done} of ${total}</div></div>
+      <div class="stat"><div class="stat-k">Sessions left</div><div class="stat-v">${left}</div></div>
+      <div class="stat"><div class="stat-k">Paid so far</div><div class="stat-v">${money0(t.paid)}</div></div>
+      <div class="stat hi"><div class="stat-k">Balance owed</div><div class="stat-v">${money0(balance)}</div></div>
+    </div>
+    <div class="gauge" role="progressbar" aria-label="Sessions completed" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><div class="gauge-fill" style="width:${done/total*100}%"></div></div>
+    <div class="gauge-cap"><span>${done} of ${total} sessions done</span><span>${next?`Next: ${next.label}, ${careDate(next.date)}`:"All sessions done"}</span></div>
+    <div class="rwd-grid">
+      <div class="panel-lite">
+        <div class="pl-title">${total>8?"Upcoming sessions":"Sessions"}</div>
+        <ul class="ledger">${shown.map(s=>`<li class="${s.done?"":"todo"}"><span>${s.label} · ${careDate(s.date)}</span><b>${s.done?"✓ Done":"Upcoming"}</b></li>`).join("")}</ul>
+        ${total>8?`<div class="earn-foot">${done} visits completed${more>0?` and ${more} more after these`:""}.</div>`:""}
+      </div>
+      <div class="panel-lite">
+        <div class="pl-title">Payment options</div>
+        <ul class="earn">${pay.map(p=>`<li>${p}</li>`).join("")}</ul>
+        <div class="earn-foot">Total fee ${money0(t.fee)}, minus estimated insurance ${money0(t.insurance)}, minus ${money0(t.paid)} paid. ${t.coverage}</div>
+      </div>
+    </div>
+    <div class="panel-lite">
+      <div class="pl-title">Care advice</div>
+      <ul class="earn">${t.advice.map(a=>`<li>${a}</li>`).join("")}</ul>
+      <div class="earn-foot">General guidance only. Follow your dentist's instructions for your treatment.</div>
+    </div>
+    <div class="care-dots" role="tablist" aria-label="Choose a treatment">${CARE_TREATMENTS.map((x,i)=>
+      `<button class="care-dot${i===careIdx?" on":""}" role="tab" data-i="${i}" aria-selected="${i===careIdx}" aria-label="${x.name}" title="${x.name}"></button>`).join("")}</div>
+  </div>`;})();
+  document.querySelectorAll(".care-dot").forEach(b=>b.addEventListener("click",()=>{
+    careIdx=Number(b.dataset.i);renderCare();
+    document.querySelector(`.care-dot[data-i="${careIdx}"]`).focus();}));
+}
+console.assert(careSummary(CARE_TREATMENTS[0]).balance===240&&careSummary(CARE_TREATMENTS[0]).left===2
+  &&careSummary(CARE_TREATMENTS[1]).balance===1750&&careSummary(CARE_TREATMENTS[2]).balance===2800
+  &&careSummary(CARE_TREATMENTS[2]).left===18,"careSummary self-check failed");
+renderCare();
 
 initMini();
 </script>
