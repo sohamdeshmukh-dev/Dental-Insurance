@@ -68,3 +68,15 @@ def test_waiting_period_denial():
 
 def test_money_rounding():
     assert money("10.005") == money("10.01")
+
+
+def test_remaining_after_and_savings_come_from_engine():
+    from services import tools
+    from services.coverage import in_network_savings
+    plan, member = tools.get_plan_details("LFG-123"), tools.get_member("demo")
+    in_net = tools.calculate_coverage(plan, member, "D3330", "in", date(2026, 10, 1))
+    out_net = tools.calculate_coverage(plan, member, "D3330", "out", date(2026, 10, 1))
+    usage = tools.get_benefit_usage(plan, member)
+    assert in_net.annual_max_remaining_after == usage.benefits_remaining - in_net.plan_payment
+    assert out_net.annual_max_remaining_after == usage.benefits_remaining - out_net.plan_payment
+    assert in_network_savings(in_net, out_net) == out_net.member_payment - in_net.member_payment

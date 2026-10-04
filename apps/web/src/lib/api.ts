@@ -1,5 +1,5 @@
 // Thin API client. Every call falls back to embedded demo data so the UI works offline.
-export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+export const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 
 export type Network = "in" | "out";
@@ -18,10 +18,23 @@ export interface ProcedureMatch {
   procedure: string; selected_code: string; possible_codes: string[]; confidence: number; requires_confirmation: boolean;
 }
 export interface AgentResponse {
-  status: string; explanation?: string; message?: string;
+  status: string; explanation?: string; message?: string; research_pending?: boolean;
   procedures?: ProcedureMatch[];
   comparisons?: Record<string, { in: Coverage; out: Coverage }>;
 }
+export interface ResearchBrief {
+  status: "NONE" | "PENDING" | "RUNNING" | "READY" | "FAILED";
+  created_at?: string; codes?: string[]; procedures?: string[]; brief?: string; disclaimer?: string;
+}
+
+// Persist the session across visits; keep an in-memory session if storage is unavailable.
+export const store = {
+  get(key: string): string | null { try { return localStorage.getItem(key); } catch { return null; } },
+  set(key: string, value: string) { try { localStorage.setItem(key, value); } catch { /* storage disabled */ } },
+};
+export const SESSION_ID = store.get("session_id") || crypto.randomUUID();
+store.set("session_id", SESSION_ID);
+
 export interface FundingMonth { label: string; paid_in_month: number; cumulative_used: number; remaining: number; }
 export interface Timeline {
   annual_maximum: number; benefits_used: number; benefits_pending: number; benefits_remaining: number;
@@ -56,7 +69,11 @@ async function postJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | 
 }
 
 export const api = {
-  agent: (message: string) => postJSON<AgentResponse>("/api/v1/agent/message", { message }),
+  agent: (message: string) => postJSON<AgentResponse>("/api/v1/agent/message", { message, session_id: SESSION_ID }, 30000),
+  research: () => getJSON<ResearchBrief>(`/api/v1/research/${SESSION_ID}`),
+  runResearch: () => fetch(`${API_BASE}/api/v1/research/${SESSION_ID}/run`, {
+    method: "POST", keepalive: true,
+  }).catch(() => null),
   providers: (zip: string) =>
     getJSON<{ providers: { provider: Omit<Provider, "network_status" | "distance_miles">; network_status: Provider["network_status"]; distance_miles: number }[] }>(
       `/api/v1/providers?zip_code=${zip}&radius=15&include_out_of_network=true`,
