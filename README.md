@@ -59,7 +59,7 @@ balance. Every number comes from the coverage engine or structured data; the mod
 | Payment plans (simulated agreement) | `services/payment_plans.py` |
 | Emergency PTO (simulated HR) | `services/pto.py` |
 | **Guardrails** (input screening + output number-check) | `services/guardrails.py` |
-| **AWS Bedrock** estimation agent (optional, tool-loop) | `services/bedrock_agent.py` |
+| **AWS Bedrock** estimation agent (optional, tool-loop) | `services/bedrock.py` |
 | Rule-based supervisor (fallback agent) | `services/supervisor.py` |
 | Narrow agent tools / account | `services/tools.py` |
 

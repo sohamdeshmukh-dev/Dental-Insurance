@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 Category = Literal["preventive", "basic", "major", "ortho"]
 NetworkStatus = Literal["in", "out"]
@@ -374,8 +374,8 @@ class PreAuthCreate(BaseModel):
     member_id: str = "demo"
     provider_id: str
     code: str
-    estimated_cost: float = Field(ge=0)
-    requested_amount: float = Field(ge=0)
+    estimated_cost: float
+    requested_amount: float
     urgency: Urgency = "routine"
     reason: str = ""
 
@@ -422,8 +422,8 @@ class AuditEntry(BaseModel):
 class PaymentPlanCreate(BaseModel):
     member_id: str = "demo"
     provider_id: str
-    codes: list[str] = Field(min_length=1)
-    term_months: int = Field(default=12, ge=1, le=60)
+    codes: list[str]
+    term_months: int = 12
 
 
 class PaymentPlan(BaseModel):
@@ -449,16 +449,8 @@ class PaymentPlan(BaseModel):
 class PTOCreate(BaseModel):
     member_id: str = "demo"
     date_needed: str
-    hours: float = Field(default=4, gt=0, le=80)
+    hours: float = 4
     reason: str = "Emergency dental visit"
-
-    @field_validator("date_needed")
-    @classmethod
-    def _iso_date(cls, v: str) -> str:
-        try:
-            return date.fromisoformat(v).isoformat()
-        except ValueError:
-            raise ValueError("date_needed must be an ISO date (YYYY-MM-DD)")
 
 
 class PTORequest(BaseModel):

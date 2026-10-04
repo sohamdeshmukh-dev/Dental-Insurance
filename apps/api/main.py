@@ -16,7 +16,6 @@ from services import pto as pto_svc
 from services import research
 from services import rewards as rewards_svc
 from services import tools
-from services.guardrails import screen_input
 from services.procedures import interpret
 from services.supervisor import compare_networks, run
 
@@ -24,28 +23,11 @@ app = FastAPI(title="Dental Benefits Optimizer API", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
-DEFAULT_PLAN_ID = "LFG-123"  # the single demo plan every member is enrolled in
-
-
-def default_plan():
-    return tools.get_plan_details(DEFAULT_PLAN_ID)
-
-
 def member_of(member_id: str):
     try:
         return tools.get_member(member_id)
     except KeyError:
         raise HTTPException(404, f"Unknown member {member_id}")
-
-
-def check_owner(getter, item_id: str, member_id: str | None, label: str) -> None:
-    """404 if the record doesn't exist or (when the caller names a member) belongs to someone else."""
-    try:
-        record = getter(item_id)
-    except KeyError:
-        raise HTTPException(404, f"Unknown {label} {item_id}")
-    if member_id is not None and record.member_id != member_id:
-        raise HTTPException(404, f"Unknown {label} {item_id}")
 
 
 @app.get("/health")
@@ -70,17 +52,14 @@ def estimate(req: EstimateRequest):
     except KeyError as e:
         raise HTTPException(404, str(e))
     member = member_of(req.member_id)
-    try:
-        both = compare_networks(plan, member, req.procedure_code, date.today())
-    except KeyError:
-        raise HTTPException(404, f"Unknown procedure code {req.procedure_code}")
+    both = compare_networks(plan, member, req.procedure_code, date.today())
     return {"in_network": both["in"].model_dump(), "out_of_network": both["out"].model_dump()}
 
 
 @app.get("/api/v1/providers")
 def get_providers(zip_code: str = Query("19122"), radius: float = 10, procedure: str | None = None,
                   specialty: str | None = None, include_out_of_network: bool = False):
-    plan = default_plan()
+    plan = tools.get_plan_details("LFG-123")
     try:
         results = tools.search_network_providers(plan, zip_code, date.today(), radius=radius, procedure=procedure,
                                                  specialty=specialty, include_out_of_network=include_out_of_network)
@@ -91,19 +70,19 @@ def get_providers(zip_code: str = Query("19122"), radius: float = 10, procedure:
 
 @app.get("/api/v1/benefits/usage")
 def usage(member_id: str = Query("demo")):
-    plan = default_plan()
+    plan = tools.get_plan_details("LFG-123")
     return tools.get_benefit_usage(plan, member_of(member_id)).model_dump()
 
 
 @app.get("/api/v1/benefits/timeline")
 def benefits_timeline(member_id: str = Query("demo")):
-    plan = default_plan()
+    plan = tools.get_plan_details("LFG-123")
     return tools.get_funding_timeline(plan, member_of(member_id), date.today()).model_dump()
 
 
 @app.post("/api/v1/care-plan/optimize")
 def care_plan(req: CarePlanRequest):
-    plan = default_plan()
+    plan = tools.get_plan_details("LFG-123")
     member = member_of(req.member_id)
     try:
         cp = tools.optimize_treatment_sequence(plan, member, req.codes, set(req.urgent_codes), req.network,
@@ -117,6 +96,7 @@ def care_plan(req: CarePlanRequest):
 def agent_message(req: AgentMessage):
     # Guardrails first: emergencies, PII, off-topic (clinical urgency before finances).
     member_of(req.member_id)
+    from services.guardrails import screen_input
     screen = screen_input(req.message)
     if screen.urgent:
         return {"status": "EMERGENCY", "message": screen.message, "urgent": True, "via": "guardrail"}
@@ -160,13 +140,13 @@ def research_run(session_id: str):
 
 @app.get("/api/v1/rewards")
 def rewards(member_id: str = Query("demo")):
-    plan = default_plan()
+    plan = tools.get_plan_details("LFG-123")
     return tools.get_rewards(plan, member_of(member_id)).model_dump()
 
 
 @app.post("/api/v1/rewards/redeem")
 def rewards_redeem(req: RedeemRequest):
-    plan = default_plan()
+    plan = tools.get_plan_details("LFG-123")
     profile = tools.get_rewards(plan, member_of(req.member_id))
     ok, msg, bal, entries = rewards_svc.redeem(profile, req.item_id)
     return {"ok": ok, "message": msg, "points_balance": bal, "sweepstakes_entries": entries}
@@ -191,12 +171,11 @@ def preauth_create(req: PreAuthCreate):
 
 @app.get("/api/v1/preauth")
 def preauth_list(member_id: str = Query("demo")):
-    return {"requests": [p.model_dump() for p in preauth_svc.list_for(member_of(member_id).member_id)]}
+    return {"requests": [p.model_dump() for p in preauth_svc.list_for(member_id)]}
 
 
 @app.post("/api/v1/preauth/{pa_id}/decide")
-def preauth_decide(pa_id: str, member_id: str | None = Query(None)):
-    check_owner(preauth_svc.get, pa_id, member_id, "pre-auth")
+def preauth_decide(pa_id: str):
     try:
         return preauth_svc.decide(pa_id).model_dump()
     except KeyError:
@@ -210,18 +189,15 @@ def payment_plan_create(req: PaymentPlanCreate):
         return pp_svc.create(req).model_dump()
     except KeyError as e:
         raise HTTPException(404, str(e))
-    except ValueError as e:
-        raise HTTPException(400, str(e))
 
 
 @app.get("/api/v1/payment-plans")
 def payment_plan_list(member_id: str = Query("demo")):
-    return {"plans": [p.model_dump() for p in pp_svc.list_for(member_of(member_id).member_id)]}
+    return {"plans": [p.model_dump() for p in pp_svc.list_for(member_id)]}
 
 
 @app.post("/api/v1/payment-plans/{pp_id}/send")
-def payment_plan_send(pp_id: str, member_id: str | None = Query(None)):
-    check_owner(pp_svc.get, pp_id, member_id, "plan")
+def payment_plan_send(pp_id: str):
     try:
         return pp_svc.send_to_doctor(pp_id).model_dump()
     except KeyError:
@@ -229,8 +205,7 @@ def payment_plan_send(pp_id: str, member_id: str | None = Query(None)):
 
 
 @app.post("/api/v1/payment-plans/{pp_id}/doctor-decision")
-def payment_plan_decision(pp_id: str, approve: bool = Query(True), member_id: str | None = Query(None)):
-    check_owner(pp_svc.get, pp_id, member_id, "plan")
+def payment_plan_decision(pp_id: str, approve: bool = Query(True)):
     try:
         return pp_svc.doctor_decision(pp_id, approve).model_dump()
     except KeyError:
@@ -245,12 +220,11 @@ def pto_create(req: PTOCreate):
 
 @app.get("/api/v1/pto")
 def pto_list(member_id: str = Query("demo")):
-    return {"requests": [r.model_dump() for r in pto_svc.list_for(member_of(member_id).member_id)]}
+    return {"requests": [r.model_dump() for r in pto_svc.list_for(member_id)]}
 
 
 @app.post("/api/v1/pto/{pto_id}/decide")
-def pto_decide(pto_id: str, approve: bool = Query(True), member_id: str | None = Query(None)):
-    check_owner(pto_svc.get, pto_id, member_id, "PTO request")
+def pto_decide(pto_id: str, approve: bool = Query(True)):
     try:
         return pto_svc.decide(pto_id, approve).model_dump()
     except KeyError:

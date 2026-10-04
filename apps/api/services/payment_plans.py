@@ -45,13 +45,11 @@ def create(req: PaymentPlanCreate, on: date | None = None) -> PaymentPlan:
     est = {s.code: s for s in clinic.clinic_estimates(member, req.provider_id, on).services}
     items: list[PaymentItem] = []
     for code in req.codes:
-        if code not in procedures.CATALOG:
-            raise KeyError(f"Unknown procedure code {code}")
-        if code not in est:  # never fabricate a price the clinic/engine can't supply
-            raise ValueError(f"{provider.name} has no estimate for {code}; cannot build a payment plan for it")
-        items.append(PaymentItem(code=code, name=procedures.CATALOG[code].name, cost=round(est[code].member_pays, 2)))
+        proc = procedures.CATALOG.get(code)
+        cost = est[code].member_pays if code in est else 0.0
+        items.append(PaymentItem(code=code, name=proc.name if proc else code, cost=round(cost, 2)))
     total = round(sum(i.cost for i in items), 2)
-    term = req.term_months
+    term = max(1, min(req.term_months, 60))
     monthly, sched = _schedule(total, term, on)
     pp = PaymentPlan(
         id=f"PP-{next(_SEQ):04d}", member_id=req.member_id, member_name=member.name,
@@ -80,10 +78,6 @@ def doctor_decision(pp_id: str, approve: bool) -> PaymentPlan:
             pp.status = "declined"
             pp.audit.append(AuditEntry(at=_now(), event="Declined by dentist"))
     return pp
-
-
-def get(item_id: str) -> PaymentPlan:
-    return _STORE[item_id]
 
 
 def list_for(member_id: str) -> list[PaymentPlan]:
