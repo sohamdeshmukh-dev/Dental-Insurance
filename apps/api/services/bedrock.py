@@ -14,7 +14,7 @@ import os
 from datetime import date
 
 from services import clinic, procedures, tools
-from services.guardrails import check_output, with_disclaimer
+from services.guardrails import check_output, collect_facts, with_disclaimer
 from services.supervisor import compare_networks
 
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
@@ -59,22 +59,6 @@ TOOLS = [
 ]
 
 
-def _record(res, amounts: set[int], pcts: set[int]) -> None:
-    """Collect every amount/percent a tool returned so the output can be verified against them."""
-    if isinstance(res, dict):
-        for k, v in res.items():
-            if isinstance(v, (int, float)) and ("amount" in k or "pay" in k or "payment" in k or "charge"
-                                                in k or "max" in k or "used" in k or "remaining" in k or "cost" in k):
-                amounts.add(round(v))
-            elif "coinsurance" in k and isinstance(v, (int, float)):
-                pcts.add(round(v * 100))
-            else:
-                _record(v, amounts, pcts)
-    elif isinstance(res, list):
-        for item in res:
-            _record(item, amounts, pcts)
-
-
 def _dispatch(name: str, inp: dict, plan, member, on: date, amounts: set[int], pcts: set[int]):
     if name == "interpret_procedures":
         return {"matches": [m.model_dump() for m in procedures.interpret(inp.get("text", ""))]}
@@ -90,7 +74,7 @@ def _dispatch(name: str, inp: dict, plan, member, on: date, amounts: set[int], p
             plan, inp["zip_code"], on, include_out_of_network=True)]}
     else:
         return {"error": f"unknown tool {name}"}
-    _record(res, amounts, pcts)
+    collect_facts(res, amounts, pcts)
     return res
 
 

@@ -35,6 +35,10 @@ def create(req: PreAuthCreate) -> PreAuth:
     return pa
 
 
+def get(item_id: str) -> PreAuth:
+    return _STORE[item_id]
+
+
 def list_for(member_id: str) -> list[PreAuth]:
     return sorted([p for p in _STORE.values() if p.member_id == member_id],
                   key=lambda p: p.submitted_at, reverse=True)

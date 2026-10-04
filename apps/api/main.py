@@ -29,6 +29,16 @@ def member_of(member_id: str):
         raise HTTPException(404, f"Unknown member {member_id}")
 
 
+def check_owner(getter, item_id: str, member_id: str | None, label: str) -> None:
+    """404 if the record doesn't exist or (when the caller names a member) belongs to someone else."""
+    try:
+        record = getter(item_id)
+    except KeyError:
+        raise HTTPException(404, f"Unknown {label} {item_id}")
+    if member_id is not None and record.member_id != member_id:
+        raise HTTPException(404, f"Unknown {label} {item_id}")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "calculation_version": tools.coverage.CALC_VERSION}
@@ -51,7 +61,10 @@ def estimate(req: EstimateRequest):
     except KeyError as e:
         raise HTTPException(404, str(e))
     member = member_of(req.member_id)
-    both = compare_networks(plan, member, req.procedure_code, date.today())
+    try:
+        both = compare_networks(plan, member, req.procedure_code, date.today())
+    except KeyError:
+        raise HTTPException(404, f"Unknown procedure code {req.procedure_code}")
     return {"in_network": both["in"].model_dump(), "out_of_network": both["out"].model_dump()}
 
 
@@ -170,11 +183,12 @@ def preauth_create(req: PreAuthCreate):
 
 @app.get("/api/v1/preauth")
 def preauth_list(member_id: str = Query("demo")):
-    return {"requests": [p.model_dump() for p in preauth_svc.list_for(member_id)]}
+    return {"requests": [p.model_dump() for p in preauth_svc.list_for(member_of(member_id).member_id)]}
 
 
 @app.post("/api/v1/preauth/{pa_id}/decide")
-def preauth_decide(pa_id: str):
+def preauth_decide(pa_id: str, member_id: str | None = Query(None)):
+    check_owner(preauth_svc.get, pa_id, member_id, "pre-auth")
     try:
         return preauth_svc.decide(pa_id).model_dump()
     except KeyError:
@@ -188,15 +202,18 @@ def payment_plan_create(req: PaymentPlanCreate):
         return pp_svc.create(req).model_dump()
     except KeyError as e:
         raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/api/v1/payment-plans")
 def payment_plan_list(member_id: str = Query("demo")):
-    return {"plans": [p.model_dump() for p in pp_svc.list_for(member_id)]}
+    return {"plans": [p.model_dump() for p in pp_svc.list_for(member_of(member_id).member_id)]}
 
 
 @app.post("/api/v1/payment-plans/{pp_id}/send")
-def payment_plan_send(pp_id: str):
+def payment_plan_send(pp_id: str, member_id: str | None = Query(None)):
+    check_owner(pp_svc.get, pp_id, member_id, "plan")
     try:
         return pp_svc.send_to_doctor(pp_id).model_dump()
     except KeyError:
@@ -204,7 +221,8 @@ def payment_plan_send(pp_id: str):
 
 
 @app.post("/api/v1/payment-plans/{pp_id}/doctor-decision")
-def payment_plan_decision(pp_id: str, approve: bool = Query(True)):
+def payment_plan_decision(pp_id: str, approve: bool = Query(True), member_id: str | None = Query(None)):
+    check_owner(pp_svc.get, pp_id, member_id, "plan")
     try:
         return pp_svc.doctor_decision(pp_id, approve).model_dump()
     except KeyError:
@@ -219,11 +237,12 @@ def pto_create(req: PTOCreate):
 
 @app.get("/api/v1/pto")
 def pto_list(member_id: str = Query("demo")):
-    return {"requests": [r.model_dump() for r in pto_svc.list_for(member_id)]}
+    return {"requests": [r.model_dump() for r in pto_svc.list_for(member_of(member_id).member_id)]}
 
 
 @app.post("/api/v1/pto/{pto_id}/decide")
-def pto_decide(pto_id: str, approve: bool = Query(True)):
+def pto_decide(pto_id: str, approve: bool = Query(True), member_id: str | None = Query(None)):
+    check_owner(pto_svc.get, pto_id, member_id, "PTO request")
     try:
         return pto_svc.decide(pto_id, approve).model_dump()
     except KeyError:

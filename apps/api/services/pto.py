@@ -39,6 +39,10 @@ def decide(pto_id: str, approve: bool = True) -> PTORequest:
     return r
 
 
+def get(item_id: str) -> PTORequest:
+    return _STORE[item_id]
+
+
 def list_for(member_id: str) -> list[PTORequest]:
     return sorted([r for r in _STORE.values() if r.member_id == member_id],
                   key=lambda r: r.submitted_at, reverse=True)
