@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import date
 
 from fastapi import FastAPI, HTTPException, Query
@@ -301,3 +302,13 @@ def pto_decide(pto_id: str, approve: bool = Query(True), member_id: str | None =
         return pto_svc.decide(pto_id, approve).model_dump()
     except KeyError:
         raise HTTPException(404, f"Unknown PTO request {pto_id}")
+
+
+# --- Serve the built frontend (single-container / Docker) -------------------
+# Only mounts when a built frontend is present (FRONTEND_DIST, default ./static),
+# so this is a no-op for the Vercel split-service deploy where the web build is
+# served separately. Registered last, so every /api/* and /health route wins.
+_DIST = os.environ.get("FRONTEND_DIST", os.path.join(os.path.dirname(__file__), "static"))
+if os.path.isdir(_DIST):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=_DIST, html=True), name="web")

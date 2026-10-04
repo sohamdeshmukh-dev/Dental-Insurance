@@ -19,9 +19,9 @@ button{font-family:inherit;}
 .hdr{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.86);backdrop-filter:saturate(1.3) blur(12px);
   border-bottom:1px solid var(--line);padding:0 40px;display:flex;flex-wrap:wrap;align-items:center;
   justify-content:space-between;gap:16px;min-height:66px;}
-.brandwrap{display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
-.logo{display:flex;align-items:center;}
-.logo svg,.logo img{height:38px;width:auto;display:block;}
+.brandwrap{display:flex;align-items:center;gap:26px;flex-wrap:wrap;max-width:100%;}
+.logo{display:flex;align-items:center;max-width:100%;}
+.logo .logo-img{display:block;width:280px;max-width:100%;height:auto;}
 .sub{font-size:12px;color:var(--muted);border-left:1px solid var(--line);padding-left:14px;}
 nav{display:flex;gap:4px;flex-wrap:wrap;}
 .navlink{position:relative;font-size:14px;font-weight:500;color:#44423F;padding:10px 12px;border-radius:10px;
