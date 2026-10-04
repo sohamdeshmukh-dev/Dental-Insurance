@@ -153,3 +153,20 @@ def test_dynamodb_backend(monkeypatch):
     assert "#s = :pending" in update["ConditionExpression"]
     assert brief_store.get("s1")["status"] == "RUNNING"  # status attribute overlays the JSON
     assert brief_store.get("missing") is None
+
+
+def test_chat_survives_a_broken_brief_store(monkeypatch):
+    monkeypatch.setenv("BEDROCK_MODEL_ID", "test-model")
+    monkeypatch.setattr(main.bedrock_agent, "run", lambda message, **kw: {
+        "status": "OK", "engine": "bedrock", "explanation": "your estimate", "tool_calls": [
+            {"tool": "compare_networks", "input": {"code": "D3330"}, "status": "success"}], "trace": []})
+
+    def broken(*_a, **_k):
+        raise RuntimeError("table not found")
+
+    monkeypatch.setattr(brief_store, "get", broken)
+    out = TestClient(main.app).post("/api/v1/agent/message", json={"message": "root canal", "session_id": "s1"})
+    assert out.status_code == 200
+    body = out.json()
+    assert body["explanation"] == "your estimate"
+    assert body["research_pending"] is False and body["research_error"] == "RuntimeError"
