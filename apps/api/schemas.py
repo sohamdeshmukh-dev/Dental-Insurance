@@ -396,3 +396,72 @@ class PreAuth(BaseModel):
     decided_at: Optional[str] = None
     decision_note: str = ""
     demo: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Payment plans  (SIMULATED agreement — no real money, no e-signature)
+# ---------------------------------------------------------------------------
+class PaymentItem(BaseModel):
+    code: str
+    name: str
+    cost: float
+
+
+class ScheduleEntry(BaseModel):
+    n: int
+    due_date: str
+    amount: float
+
+
+class AuditEntry(BaseModel):
+    at: str
+    event: str
+
+
+class PaymentPlanCreate(BaseModel):
+    member_id: str = "demo"
+    provider_id: str
+    codes: list[str]
+    term_months: int = 12
+
+
+class PaymentPlan(BaseModel):
+    id: str
+    member_id: str
+    member_name: str
+    provider_id: str
+    provider_name: str
+    items: list[PaymentItem]
+    total: float
+    term_months: int
+    monthly_amount: float
+    status: Literal["draft", "sent_to_doctor", "active", "declined"]
+    schedule: list[ScheduleEntry]
+    audit: list[AuditEntry]
+    created_at: str
+    demo: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Emergency Paid-Time-Off request  (SIMULATED HR workflow)
+# ---------------------------------------------------------------------------
+class PTOCreate(BaseModel):
+    member_id: str = "demo"
+    date_needed: str
+    hours: float = 4
+    reason: str = "Emergency dental visit"
+
+
+class PTORequest(BaseModel):
+    id: str
+    member_id: str
+    member_name: str
+    employer: str
+    date_needed: str
+    hours: float
+    reason: str
+    status: Literal["submitted", "approved", "denied"]
+    submitted_at: str
+    decided_at: Optional[str] = None
+    note: str = ""
+    demo: bool = True

@@ -63,6 +63,19 @@ export interface PreAuth {
   estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string; decision_note: string; submitted_at: string;
 }
 
+export interface PaymentItem { code: string; name: string; cost: number; }
+export interface ScheduleEntry { n: number; due_date: string; amount: number; }
+export interface PaymentPlan {
+  id: string; member_name: string; provider_id: string; provider_name: string; items: PaymentItem[];
+  total: number; term_months: number; monthly_amount: number;
+  status: "draft" | "sent_to_doctor" | "active" | "declined"; schedule: ScheduleEntry[];
+  audit: { at: string; event: string }[]; created_at: string;
+}
+export interface PTORequest {
+  id: string; member_name: string; employer: string; date_needed: string; hours: number; reason: string;
+  status: "submitted" | "approved" | "denied"; note: string;
+}
+
 export type Relationship = "guardian" | "dependent";
 export interface MemberSummary {
   member_id: string; name: string; relationship: Relationship; age: number | null;
@@ -89,6 +102,14 @@ export const api = {
   preauthCreate: (body: { member_id: string; provider_id: string; code: string; estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string }) =>
     postJSON<PreAuth>("/api/v1/preauth", body, 3000),
   preauthDecide: (id: string) => postJSON<PreAuth>(`/api/v1/preauth/${id}/decide`, {}, 3000),
+  paymentPlanCreate: (body: { member_id: string; provider_id: string; codes: string[]; term_months: number }) =>
+    postJSON<PaymentPlan>("/api/v1/payment-plans", body, 3000),
+  paymentPlanSend: (id: string) => postJSON<PaymentPlan>(`/api/v1/payment-plans/${id}/send`, {}, 3000),
+  paymentPlanDecide: (id: string, approve: boolean) =>
+    postJSON<PaymentPlan>(`/api/v1/payment-plans/${id}/doctor-decision?approve=${approve}`, {}, 3000),
+  ptoCreate: (body: { member_id: string; date_needed: string; hours: number; reason: string }) =>
+    postJSON<PTORequest>("/api/v1/pto", body, 3000),
+  ptoDecide: (id: string, approve: boolean) => postJSON<PTORequest>(`/api/v1/pto/${id}/decide?approve=${approve}`, {}, 3000),
 };
 
 export const money = (n: number) => "$" + Math.round(n).toLocaleString();

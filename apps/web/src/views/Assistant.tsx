@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { api, type Coverage, type ProcedureMatch } from "../lib/api";
+import { api, type Coverage, type ProcedureMatch, type PTORequest } from "../lib/api";
 import { MiniMap } from "../components/MiniMap";
 import { Icon } from "../components/bits";
 import { useProfile } from "../lib/profile";
@@ -10,7 +10,7 @@ const md = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace
 const catOf = (c: Coverage) => (c.coinsurance_pct >= 1 ? "Preventive" : c.coinsurance_pct >= 0.8 ? "Basic service" : "Major service");
 
 interface Receipt { proc: ProcedureMatch; cmp: { in: Coverage; out: Coverage }; }
-type Msg = { role: "user" } & { text: string } | { role: "ai"; text: string; receipts?: Receipt[] };
+type Msg = { role: "user" } & { text: string } | { role: "ai"; text: string; receipts?: Receipt[]; emergency?: boolean };
 
 const SEED: Msg[] = [
   { role: "user", text: "I need a crown on my back molar — how much will that actually cost me?" },
@@ -50,7 +50,7 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
       const cmp = out.comparisons?.[p.selected_code];
       return cmp ? [{ proc: p, cmp }] : [];
     });
-    setMsgs((m) => [...m, { role: "ai", text: out.explanation || out.message || "I couldn't find an estimate for that.", receipts }]);
+    setMsgs((m) => [...m, { role: "ai", text: out.explanation || out.message || "I couldn't find an estimate for that.", receipts, emergency: out.status === "EMERGENCY" }]);
     toEnd();
   }
 
@@ -70,7 +70,7 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
               <motion.div key={i} layout initial={{ opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 className={m.role === "user" ? "u" : "a"}>
-                {m.role === "user" ? m.text : <AiMessage msg={m} />}
+                {m.role === "user" ? m.text : <AiMessage msg={m} activeId={activeId} onOpenRadar={onOpenRadar} />}
               </motion.div>
             ))}
           </AnimatePresence>
@@ -102,7 +102,8 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
   );
 }
 
-function AiMessage({ msg }: { msg: Extract<Msg, { role: "ai" }> }) {
+function AiMessage({ msg, activeId, onOpenRadar }: { msg: Extract<Msg, { role: "ai" }>; activeId: string; onOpenRadar: () => void }) {
+  if (msg.emergency) return <EmergencyCard text={msg.text} activeId={activeId} onOpenRadar={onOpenRadar} />;
   return (
     <>
       <div className="row">
@@ -111,6 +112,58 @@ function AiMessage({ msg }: { msg: Extract<Msg, { role: "ai" }> }) {
       </div>
       {msg.receipts?.map((r, i) => <ReceiptCard key={i} r={r} />)}
     </>
+  );
+}
+
+function EmergencyCard({ text, activeId, onOpenRadar }: { text: string; activeId: string; onOpenRadar: () => void }) {
+  const [showPto, setShowPto] = useState(false);
+  const [pto, setPto] = useState<PTORequest | null>(null);
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [hours, setHours] = useState(4);
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    setBusy(true);
+    const r = await api.ptoCreate({ member_id: activeId, date_needed: date, hours, reason: "Emergency dental visit" });
+    setBusy(false); setPto(r ?? null);
+  }
+  async function approve() {
+    if (!pto) return; setBusy(true);
+    const r = await api.ptoDecide(pto.id, true); setBusy(false); if (r) setPto(r);
+  }
+
+  return (
+    <div className="row">
+      <div className="badge-ai" style={{ background: "#B3261E" }}>!</div>
+      <div className="emerg">
+        <div className="emerg-head">Possible dental emergency</div>
+        <p>{text}</p>
+        <div className="emerg-actions">
+          <button className="emerg-btn primary" onClick={onOpenRadar}>Find care near me →</button>
+          {!showPto && !pto && <button className="emerg-btn" onClick={() => setShowPto(true)}>Request emergency time off</button>}
+        </div>
+        {showPto && !pto && (
+          <div className="emerg-pto">
+            <div className="emerg-pto-title">Emergency PTO request</div>
+            <div className="emerg-pto-row">
+              <label>Date<input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
+              <label>Hours<input type="number" min={1} max={8} value={hours} onChange={(e) => setHours(+e.target.value)} /></label>
+            </div>
+            <button className="emerg-btn primary" disabled={busy} onClick={submit}>{busy ? "Sending…" : "Submit to HR"}</button>
+            <div className="emerg-note">Simulated — no request is sent to a real HR system.</div>
+          </div>
+        )}
+        {pto && (
+          <div className="emerg-pto">
+            <div className="emerg-pto-title">PTO {pto.id} · <span style={{ color: pto.status === "approved" ? "var(--in)" : "var(--accent)" }}>{pto.status.toUpperCase()}</span></div>
+            <div className="emerg-note">{pto.hours}h on {pto.date_needed} · {pto.employer}</div>
+            {pto.status === "submitted"
+              ? <button className="emerg-btn primary" disabled={busy} onClick={approve}>Simulate HR approval</button>
+              : <div className="emerg-note">{pto.note}</div>}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

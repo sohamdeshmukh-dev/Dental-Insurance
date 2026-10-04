@@ -5,8 +5,10 @@ from datetime import date
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, PreAuthCreate,
-                     RedeemRequest)
+from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, PaymentPlanCreate,
+                     PreAuthCreate, PTOCreate, RedeemRequest)
+from services import payment_plans as pp_svc
+from services import pto as pto_svc
 from services import preauth as preauth_svc
 from services import rewards as rewards_svc
 from services import tools
@@ -146,3 +148,52 @@ def preauth_decide(pa_id: str):
         return preauth_svc.decide(pa_id).model_dump()
     except KeyError:
         raise HTTPException(404, f"Unknown pre-auth {pa_id}")
+
+
+@app.post("/api/v1/payment-plans")
+def payment_plan_create(req: PaymentPlanCreate):
+    member_of(req.member_id)
+    try:
+        return pp_svc.create(req).model_dump()
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/v1/payment-plans")
+def payment_plan_list(member_id: str = Query("demo")):
+    return {"plans": [p.model_dump() for p in pp_svc.list_for(member_id)]}
+
+
+@app.post("/api/v1/payment-plans/{pp_id}/send")
+def payment_plan_send(pp_id: str):
+    try:
+        return pp_svc.send_to_doctor(pp_id).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"Unknown plan {pp_id}")
+
+
+@app.post("/api/v1/payment-plans/{pp_id}/doctor-decision")
+def payment_plan_decision(pp_id: str, approve: bool = Query(True)):
+    try:
+        return pp_svc.doctor_decision(pp_id, approve).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"Unknown plan {pp_id}")
+
+
+@app.post("/api/v1/pto")
+def pto_create(req: PTOCreate):
+    member_of(req.member_id)
+    return pto_svc.create(req).model_dump()
+
+
+@app.get("/api/v1/pto")
+def pto_list(member_id: str = Query("demo")):
+    return {"requests": [r.model_dump() for r in pto_svc.list_for(member_id)]}
+
+
+@app.post("/api/v1/pto/{pto_id}/decide")
+def pto_decide(pto_id: str, approve: bool = Query(True)):
+    try:
+        return pto_svc.decide(pto_id, approve).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"Unknown PTO request {pto_id}")

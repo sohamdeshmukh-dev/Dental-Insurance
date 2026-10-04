@@ -258,3 +258,41 @@ footer .r{font-size:12px;color:var(--faint);}
 .prod-label{font-size:13px;font-weight:600;line-height:1.35;flex:1;}
 .prod-link{font-size:11.5px;font-weight:700;color:var(--accent);}
 @media (max-width:760px){.prod-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* ---------- Payments ---------- */
+.pp-select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;background:#fff;outline:none;}
+.pp-select:focus{border-color:var(--brand-600);}
+.pp-srv{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin:7px 0;cursor:pointer;transition:border-color .14s,background .14s;}
+.pp-srv.on{border-color:var(--brand);background:var(--brand-tint);}
+.pp-srv input{accent-color:var(--brand);width:16px;height:16px;}
+.pp-srv-name{flex:1;font-size:13.5px;font-weight:600;} .pp-srv-name span{display:block;font-size:11px;color:var(--muted);font-weight:400;}
+.pp-srv-cost{font-size:14px;font-weight:700;}
+.pp-terms{display:flex;gap:8px;margin-bottom:14px;}
+.pp-term{flex:1;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:.14s;}
+.pp-term.on{border-color:var(--brand);background:var(--brand);color:#fff;}
+.pp-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:4px 0 14px;}
+.pp-summary>div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 13px;}
+.pp-summary span{font-size:11.5px;color:var(--muted);display:block;} .pp-summary b{font-size:17px;}
+.pp-plan-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.pp-plan-id{font-size:16px;font-weight:800;}
+.pp-status{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:5px 10px;border-radius:999px;background:#EEF0F3;color:#44423F;}
+.pp-status[data-s="active"]{background:var(--in-tint);color:#052a1a;} .pp-status[data-s="sent_to_doctor"]{background:#FBF0DC;color:#7A5400;}
+.pp-status[data-s="declined"]{background:#FCE8E6;color:#8A1B10;}
+.pp-sched-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line-soft);}
+.pp-actions{display:flex;gap:10px;margin-top:14px;}
+.pp-actions .rwd-btn{flex:1;padding:11px;}
+.pp-decline{border:1px solid var(--line);background:#fff;color:#8A1B10;font-weight:700;border-radius:9px;padding:11px 16px;cursor:pointer;}
+
+/* ---------- Emergency card ---------- */
+.emerg{background:#FFF4F2;border:1px solid #F3C9C2;border-radius:4px 16px 16px 16px;padding:14px 16px;box-shadow:var(--shadow);max-width:480px;}
+.emerg-head{font-weight:800;font-size:14px;color:#B3261E;margin-bottom:5px;}
+.emerg p{margin:0 0 10px;font-size:14px;line-height:1.55;color:#5a2420;}
+.emerg-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.emerg-btn{border:1px solid #E3B4AD;background:#fff;color:#8A1B10;font-weight:700;font-size:12.5px;border-radius:9px;padding:8px 13px;cursor:pointer;}
+.emerg-btn.primary{background:#B3261E;border-color:#B3261E;color:#fff;}
+.emerg-pto{margin-top:12px;border-top:1px solid #F3C9C2;padding-top:12px;}
+.emerg-pto-title{font-size:13px;font-weight:700;margin-bottom:8px;}
+.emerg-pto-row{display:flex;gap:10px;margin-bottom:10px;}
+.emerg-pto-row label{flex:1;display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:#7a4a44;font-weight:600;}
+.emerg-pto-row input{border:1px solid #E3B4AD;border-radius:8px;padding:7px 9px;font-family:inherit;font-size:13px;outline:none;}
+.emerg-note{font-size:11px;color:#9a6a62;margin-top:7px;}

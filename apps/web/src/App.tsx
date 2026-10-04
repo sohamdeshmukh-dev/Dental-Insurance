@@ -6,14 +6,16 @@ import { Assistant } from "./views/Assistant";
 import { Dashboard } from "./views/Dashboard";
 import { Rewards } from "./views/Rewards";
 import { Care } from "./views/Care";
+import { Payments } from "./views/Payments";
 import { Radar } from "./components/Radar";
 
-type View = "assistant" | "dashboard" | "rewards" | "care";
+type View = "assistant" | "dashboard" | "rewards" | "care" | "payments";
 const NAV: { id: View; label: string }[] = [
   { id: "assistant", label: "Ask the AI" },
   { id: "dashboard", label: "Dashboard" },
   { id: "rewards", label: "Rewards" },
   { id: "care", label: "Care Plan" },
+  { id: "payments", label: "Payments" },
 ];
 
 const initials = (name: string) => name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
@@ -81,6 +83,7 @@ function Shell() {
           {view === "dashboard" && <Dashboard />}
           {view === "rewards" && <Rewards />}
           {view === "care" && <Care />}
+          {view === "payments" && <Payments />}
         </motion.div>
       </AnimatePresence>
 
