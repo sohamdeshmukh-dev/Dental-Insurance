@@ -16,3 +16,6 @@ node_modules/
 apps/web/dist/
 apps/web/node_modules/
 apps/web/*.tsbuildinfo
+
+# built frontend served by FastAPI (single-container)
+apps/api/static/

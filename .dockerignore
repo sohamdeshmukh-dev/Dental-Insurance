@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.vite
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.git
+.github
+**/.env
+**/.env.*
+!**/.env.example
+apps/web/config.js
+*.md
+scratchpad
