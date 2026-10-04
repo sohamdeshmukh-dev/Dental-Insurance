@@ -30,7 +30,7 @@ const SEED: Msg[] = [
 const CHIPS = ["I need a root canal and a crown on tooth 14", "Is a cleaning fully covered?", "What will a deep cleaning cost?"];
 
 export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
-  const { activeId } = useProfile();
+  const { activeId, active } = useProfile();
   const [msgs, setMsgs] = useState<Msg[]>(SEED);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -95,7 +95,7 @@ export function Assistant({ onOpenRadar }: { onOpenRadar: () => void }) {
       <aside className="aside">
         <MiniMap onOpenFull={onOpenRadar} />
         <div className="note">
-          <b>Annual maximum:</b> you have up to approximately <b>$950</b> of your $1,500 remaining this benefit year. In-network dentists accept Lincoln's allowed amount as full payment, so your share is usually lower.
+          <b>Annual maximum:</b> {active.name} has up to approximately <b>${Math.round(active.benefits_remaining).toLocaleString()}</b> of ${Math.round(active.annual_maximum).toLocaleString()} remaining this benefit year. In-network dentists accept Lincoln's allowed amount as full payment, so your share is usually lower.
         </div>
       </aside>
     </div>

@@ -5,7 +5,9 @@ from datetime import date
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, RedeemRequest)
+from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, PreAuthCreate,
+                     RedeemRequest)
+from services import preauth as preauth_svc
 from services import rewards as rewards_svc
 from services import tools
 from services.procedures import interpret
@@ -101,3 +103,33 @@ def rewards_redeem(req: RedeemRequest):
     profile = tools.get_rewards(plan, member_of(req.member_id))
     ok, msg, bal, entries = rewards_svc.redeem(profile, req.item_id)
     return {"ok": ok, "message": msg, "points_balance": bal, "sweepstakes_entries": entries}
+
+
+@app.get("/api/v1/providers/{provider_id}/estimates")
+def clinic_estimates(provider_id: str, member_id: str = Query("demo")):
+    try:
+        return tools.get_clinic_estimates(member_of(member_id), provider_id, date.today()).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"Unknown provider {provider_id}")
+
+
+@app.post("/api/v1/preauth")
+def preauth_create(req: PreAuthCreate):
+    member_of(req.member_id)
+    try:
+        return preauth_svc.create(req).model_dump()
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/v1/preauth")
+def preauth_list(member_id: str = Query("demo")):
+    return {"requests": [p.model_dump() for p in preauth_svc.list_for(member_id)]}
+
+
+@app.post("/api/v1/preauth/{pa_id}/decide")
+def preauth_decide(pa_id: str):
+    try:
+        return preauth_svc.decide(pa_id).model_dump()
+    except KeyError:
+        raise HTTPException(404, f"Unknown pre-auth {pa_id}")

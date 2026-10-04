@@ -55,6 +55,14 @@ async function postJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | 
   } catch { return null; }
 }
 
+export interface ClinicServiceEstimate { code: string; name: string; category: string; allowed_amount: number; member_pays: number; covered: boolean; }
+export interface ClinicEstimates { provider_id: string; provider_name: string; network: Network; services: ClinicServiceEstimate[]; disclaimer: string; }
+export type Urgency = "routine" | "soon" | "urgent";
+export interface PreAuth {
+  id: string; status: "submitted" | "approved" | "denied"; procedure_name: string; provider_name: string;
+  estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string; decision_note: string; submitted_at: string;
+}
+
 export type Relationship = "guardian" | "dependent";
 export interface MemberSummary {
   member_id: string; name: string; relationship: Relationship; age: number | null;
@@ -76,6 +84,11 @@ export const api = {
     postJSON<{ ok: boolean; message: string; points_balance: number; sweepstakes_entries: number }>(
       "/api/v1/rewards/redeem", { item_id, member_id: member }, 2000,
     ),
+  clinicEstimates: (providerId: string, member = "demo") =>
+    getJSON<ClinicEstimates>(`/api/v1/providers/${providerId}/estimates?member_id=${member}`),
+  preauthCreate: (body: { member_id: string; provider_id: string; code: string; estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string }) =>
+    postJSON<PreAuth>("/api/v1/preauth", body, 3000),
+  preauthDecide: (id: string) => postJSON<PreAuth>(`/api/v1/preauth/${id}/decide`, {}, 3000),
 };
 
 export const money = (n: number) => "$" + Math.round(n).toLocaleString();

@@ -88,3 +88,8 @@ def get_account():
             benefits_remaining=u.benefits_remaining, percent_used=u.percent_used, state=u.state))
     return Account(account_id=ACCOUNT["account_id"], employer=ACCOUNT["employer"], plan_name=PLAN.plan_name,
                    guardian_id=ACCOUNT["guardian_id"], members=members)
+
+
+def get_clinic_estimates(member: Member, provider_id: str, on: date):
+    from services import clinic
+    return clinic.clinic_estimates(member, provider_id, on)

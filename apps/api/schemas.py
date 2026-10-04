@@ -156,6 +156,7 @@ class Provider(BaseModel):
     phone: str
     accepting_new_patients: bool = True
     procedures: list[str] = []  # CDT codes offered
+    fee_factor: float = 1.0     # clinic-specific fee level vs regional baseline (mock)
 
 
 class ProviderNetwork(BaseModel):
@@ -340,3 +341,58 @@ class RedeemResult(BaseModel):
     message: str
     points_balance: int
     sweepstakes_entries: int
+
+
+# ---------------------------------------------------------------------------
+# Per-clinic pre-estimates
+# ---------------------------------------------------------------------------
+class ClinicServiceEstimate(BaseModel):
+    code: str
+    name: str
+    category: str
+    allowed_amount: float
+    member_pays: float
+    covered: bool
+
+
+class ClinicEstimates(BaseModel):
+    provider_id: str
+    provider_name: str
+    network: NetworkStatus
+    services: list[ClinicServiceEstimate]
+    disclaimer: str
+
+
+# ---------------------------------------------------------------------------
+# Out-of-network pre-authorization  (SIMULATED — mock Lincoln approval)
+# ---------------------------------------------------------------------------
+Urgency = Literal["routine", "soon", "urgent"]
+
+
+class PreAuthCreate(BaseModel):
+    member_id: str = "demo"
+    provider_id: str
+    code: str
+    estimated_cost: float
+    requested_amount: float
+    urgency: Urgency = "routine"
+    reason: str = ""
+
+
+class PreAuth(BaseModel):
+    id: str
+    member_id: str
+    member_name: str
+    provider_id: str
+    provider_name: str
+    code: str
+    procedure_name: str
+    estimated_cost: float
+    requested_amount: float
+    urgency: Urgency
+    reason: str
+    status: Literal["submitted", "approved", "denied"]
+    submitted_at: str
+    decided_at: Optional[str] = None
+    decision_note: str = ""
+    demo: bool = True
