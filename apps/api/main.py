@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, RedeemRequest)
+from services import bedrock_agent
 from services import rewards as rewards_svc
 from services import tools
 from services.procedures import interpret
@@ -71,6 +72,17 @@ def care_plan(req: CarePlanRequest):
 
 @app.post("/api/v1/agent/message")
 def agent_message(req: AgentMessage):
+    # When a Bedrock model is configured (BEDROCK_MODEL_ID), use the Converse tool-use
+    # orchestrator; otherwise fall back to the deterministic rule-based supervisor. If the
+    # Bedrock call fails at runtime, degrade gracefully to the supervisor rather than erroring.
+    if bedrock_agent.bedrock_enabled():
+        try:
+            return bedrock_agent.run(req.message, today=req.today, session_id=req.session_id)
+        except Exception as exc:  # pragma: no cover - exercised only with a live/broken AWS config
+            result = run(req.message, today=req.today, session_id=req.session_id)
+            result["engine"] = "supervisor"
+            result["bedrock_error"] = str(exc)
+            return result
     return run(req.message, today=req.today, session_id=req.session_id)
 
 
