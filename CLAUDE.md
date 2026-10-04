@@ -16,7 +16,7 @@ IMPORTANT ARCHITECTURAL RULES:
 10. Estimates must clearly state that actual claim processing determines final benefits.
 11. Reminders must not say "you are losing $X"; say "up to approximately $X of remaining eligible plan benefits".
 
-Stack: FastAPI + Pydantic (backend), Next.js + TypeScript + Tailwind + shadcn/ui (frontend, planned),
+Stack: FastAPI + Pydantic (backend), React + Vite + TypeScript + Framer Motion (frontend, in apps/web),
 PostgreSQL + pgvector (planned; mocks are in-memory today), Mapbox GL JS, IBM watsonx Orchestrate (planned runtime).
 
 Every new feature must include: types, error handling, loading state, tests, telemetry, source provenance where applicable.
@@ -54,3 +54,4 @@ Run API:   `cd apps/api && ../../.venv/bin/uvicorn main:app --reload`
   `{{resolve:secretsmanager:secret-id:SecretString:json-key}}` with
   `asm-exec` so the secret resolves at runtime without entering context.
 <!-- END AWS Agent Toolkit rules -->
+Run web:   `cd apps/web && npm install && npm run dev`  (Mapbox token in apps/web/.env.local)

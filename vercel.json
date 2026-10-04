@@ -8,8 +8,8 @@
     },
     "web": {
       "root": "apps/web",
-      "buildCommand": "echo \"window.MAPBOX_TOKEN='$MAPBOX_PUBLIC_TOKEN';\" > config.js",
-      "outputDirectory": "."
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
     }
   },
   "rewrites": [

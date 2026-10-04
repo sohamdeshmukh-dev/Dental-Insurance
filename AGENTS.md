@@ -16,7 +16,7 @@ IMPORTANT ARCHITECTURAL RULES:
 10. Estimates must clearly state that actual claim processing determines final benefits.
 11. Reminders must not say "you are losing $X"; say "up to approximately $X of remaining eligible plan benefits".
 
-Stack: FastAPI + Pydantic (backend), Next.js + TypeScript + Tailwind + shadcn/ui (frontend, planned),
+Stack: FastAPI + Pydantic (backend), React + Vite + TypeScript + Framer Motion (frontend, in apps/web),
 PostgreSQL + pgvector (planned; mocks are in-memory today), Mapbox GL JS, IBM watsonx Orchestrate (planned runtime).
 
 AWS BEDROCK AGENT (optional LLM runtime for `POST /api/v1/agent/message`):
