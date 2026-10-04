@@ -67,9 +67,25 @@ async function postJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | 
     return r.ok ? ((await r.json()) as T) : null;
   } catch { return null; }
 }
+async function putJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | null> {
+  try {
+    const r = await fetch(`${API_BASE}${path}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body), signal: AbortSignal.timeout(ms),
+    });
+    return r.ok ? ((await r.json()) as T) : null;
+  } catch { return null; }
+}
 
 export interface ClinicServiceEstimate { code: string; name: string; category: string; allowed_amount: number; member_pays: number; covered: boolean; }
 export interface ClinicEstimates { provider_id: string; provider_name: string; network: Network; services: ClinicServiceEstimate[]; disclaimer: string; }
+export interface ServiceCompareRow {
+  code: string; name: string; category: string;
+  in_member_pays: number; out_member_pays: number; in_covered: boolean; out_covered: boolean; savings: number;
+}
+export interface ServiceComparison {
+  rows: ServiceCompareRow[]; in_total: number; out_total: number; savings_total: number; disclaimer: string;
+}
 export type Urgency = "routine" | "soon" | "urgent";
 export interface PreAuth {
   id: string; status: "submitted" | "approved" | "denied"; procedure_name: string; provider_name: string;
@@ -87,6 +103,14 @@ export interface PaymentPlan {
 export interface PTORequest {
   id: string; member_name: string; employer: string; date_needed: string; hours: number; reason: string;
   status: "submitted" | "approved" | "denied"; note: string;
+}
+export interface WorkSchedule {
+  member_id: string; employer: string; timezone: string; work_days: number[];
+  start_hour: number; end_hour: number; manager: string; source: string; demo: boolean;
+}
+export interface PTOBalance {
+  member_id: string; employer: string; accrued_hours: number; used_hours: number;
+  pending_hours: number; available_hours: number; as_of: string; source: string; demo: boolean;
 }
 
 export type Relationship = "guardian" | "dependent";
@@ -117,6 +141,8 @@ export const api = {
     ),
   clinicEstimates: (providerId: string, member = "demo") =>
     getJSON<ClinicEstimates>(`/api/v1/providers/${providerId}/estimates?member_id=${member}`),
+  compareServices: (codes: string[], member = "demo") =>
+    postJSON<ServiceComparison>("/api/v1/benefits/compare", { member_id: member, codes }, 3000),
   preauthCreate: (body: { member_id: string; provider_id: string; code: string; estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string }) =>
     postJSON<PreAuth>("/api/v1/preauth", body, 3000),
   preauthDecide: (id: string) => postJSON<PreAuth>(`/api/v1/preauth/${id}/decide`, {}, 3000),
@@ -128,6 +154,11 @@ export const api = {
   ptoCreate: (body: { member_id: string; date_needed: string; hours: number; reason: string }) =>
     postJSON<PTORequest>("/api/v1/pto", body, 3000),
   ptoDecide: (id: string, approve: boolean) => postJSON<PTORequest>(`/api/v1/pto/${id}/decide?approve=${approve}`, {}, 3000),
+  ptoRequests: (member = "demo") => getJSON<{ requests: PTORequest[] }>(`/api/v1/pto?member_id=${member}`),
+  ptoBalance: (member = "demo") => getJSON<PTOBalance>(`/api/v1/pto/balance?member_id=${member}`),
+  employeeSchedule: (member = "demo") => getJSON<WorkSchedule>(`/api/v1/employee/schedule?member_id=${member}`),
+  employeeScheduleUpdate: (body: { member_id: string } & Partial<Omit<WorkSchedule, "member_id">>) =>
+    putJSON<WorkSchedule>("/api/v1/employee/schedule", body, 3000),
 };
 
 export const money = (n: number) => "$" + Math.round(n).toLocaleString();

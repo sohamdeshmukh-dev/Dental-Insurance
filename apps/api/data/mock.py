@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 
 from schemas import (DentalPlan, FrequencyLimit, Member, PaidClaim, Provenance, Provider,
-                     ProviderNetwork, ServiceRecord, WaitingPeriod)
+                     ProviderNetwork, PTOBalance, ServiceRecord, WaitingPeriod, WorkSchedule)
 
 _src = lambda page, conf=0.99: Provenance(source_type="MOCK", source_id="lincoln-ppo-2026.pdf", page=page, confidence=conf)
 
@@ -70,6 +70,18 @@ MEMBERS = {
 
 ACCOUNT = {"account_id": "ACME-0007", "employer": "Acme Co", "guardian_id": "demo",
            "member_ids": ["demo", "demo-child"]}
+
+# Employee time-off (SIMULATED HRIS, Workday-style). Only the working guardian has a profile;
+# the dependent child has none, so the API returns NEEDS_INFORMATION rather than fabricating one.
+WORK_SCHEDULES = {
+    "demo": WorkSchedule(member_id="demo", employer="Acme Co", timezone="America/New_York",
+                         work_days=[0, 1, 2, 3, 4], start_hour=9.0, end_hour=17.0, manager="Dana Brooks"),
+}
+# accrued - used - pending = available (104 = 120 - 16 - 0).
+PTO_BALANCES = {
+    "demo": PTOBalance(member_id="demo", employer="Acme Co", accrued_hours=120.0, used_hours=16.0,
+                       pending_hours=0.0, available_hours=104.0, as_of="2026-10-01"),
+}
 
 PROVIDERS = [
     Provider(provider_id="P001", name="Fishtown Family Dental", specialty="General Dentist", address="1200 Frankford Ave",

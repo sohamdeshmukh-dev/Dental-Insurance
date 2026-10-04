@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 Category = Literal["preventive", "basic", "major", "ortho"]
 NetworkStatus = Literal["in", "out"]
@@ -225,6 +225,31 @@ class InterpretRequest(BaseModel):
     text: str
 
 
+class CompareRequest(BaseModel):
+    member_id: str = "demo"
+    codes: list[str] = Field(min_length=1)
+
+
+class ServiceCompareRow(BaseModel):
+    code: str
+    name: str
+    category: str
+    in_member_pays: float
+    out_member_pays: float
+    in_covered: bool
+    out_covered: bool
+    savings: float  # out-of-network member cost minus in-network (what staying in-network saves)
+
+
+class ServiceComparison(BaseModel):
+    """Side-by-side in-network vs out-of-network member cost for a chosen set of services."""
+    rows: list[ServiceCompareRow]
+    in_total: float
+    out_total: float
+    savings_total: float
+    disclaimer: str
+
+
 class AgentMessage(BaseModel):
     session_id: Optional[str] = None
     message: str
@@ -374,8 +399,8 @@ class PreAuthCreate(BaseModel):
     member_id: str = "demo"
     provider_id: str
     code: str
-    estimated_cost: float
-    requested_amount: float
+    estimated_cost: float = Field(ge=0)
+    requested_amount: float = Field(ge=0)
     urgency: Urgency = "routine"
     reason: str = ""
 
@@ -422,8 +447,8 @@ class AuditEntry(BaseModel):
 class PaymentPlanCreate(BaseModel):
     member_id: str = "demo"
     provider_id: str
-    codes: list[str]
-    term_months: int = 12
+    codes: list[str] = Field(min_length=1)
+    term_months: int = Field(default=12, ge=1, le=60)
 
 
 class PaymentPlan(BaseModel):
@@ -449,8 +474,16 @@ class PaymentPlan(BaseModel):
 class PTOCreate(BaseModel):
     member_id: str = "demo"
     date_needed: str
-    hours: float = 4
+    hours: float = Field(default=4, gt=0, le=80)
     reason: str = "Emergency dental visit"
+
+    @field_validator("date_needed")
+    @classmethod
+    def _iso_date(cls, v: str) -> str:
+        try:
+            return date.fromisoformat(v).isoformat()
+        except ValueError:
+            raise ValueError("date_needed must be an ISO date (YYYY-MM-DD)")
 
 
 class PTORequest(BaseModel):
@@ -465,4 +498,73 @@ class PTORequest(BaseModel):
     submitted_at: str
     decided_at: Optional[str] = None
     note: str = ""
+    demo: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Employee time-off: work schedule + PTO balance  (SIMULATED HRIS / Workday-style)
+# Mock data only; no real HR system is read or written. Hours math is deterministic
+# (services/pto.py) — the LLM never computes a balance.
+# ---------------------------------------------------------------------------
+class WorkSchedule(BaseModel):
+    member_id: str
+    employer: str
+    timezone: str = "America/New_York"
+    work_days: list[int] = [0, 1, 2, 3, 4]  # 0=Mon .. 6=Sun
+    start_hour: float = Field(default=9.0, ge=0, le=24)   # 24h local time (9.0 = 9:00am)
+    end_hour: float = Field(default=17.0, ge=0, le=24)
+    manager: str = "Unassigned"
+    source: str = "mock-hris"
+    demo: bool = True
+
+    @model_validator(mode="after")
+    def _valid_window(self):
+        if not all(0 <= d <= 6 for d in self.work_days):
+            raise ValueError("work_days entries must be 0 (Mon) through 6 (Sun)")
+        if self.end_hour <= self.start_hour:
+            raise ValueError("end_hour must be after start_hour")
+        return self
+
+
+class WorkScheduleUpdate(BaseModel):
+    """Partial update; only the fields the employee changes are sent."""
+    member_id: str = "demo"
+    timezone: Optional[str] = None
+    work_days: Optional[list[int]] = None
+    start_hour: Optional[float] = Field(default=None, ge=0, le=24)
+    end_hour: Optional[float] = Field(default=None, ge=0, le=24)
+    manager: Optional[str] = None
+
+    @field_validator("work_days")
+    @classmethod
+    def _valid_days(cls, v):
+        if v is not None and not all(0 <= d <= 6 for d in v):
+            raise ValueError("work_days entries must be 0 (Mon) through 6 (Sun)")
+        return sorted(set(v)) if v is not None else v
+
+
+class PTOBalance(BaseModel):
+    member_id: str
+    employer: str
+    accrued_hours: float
+    used_hours: float
+    pending_hours: float
+    available_hours: float
+    as_of: str
+    source: str = "mock-hris"
+    demo: bool = True
+
+
+class PTOProposal(BaseModel):
+    """A drafted (not submitted) time-off suggestion the agent surfaces for an in-hours emergency."""
+    member_id: str
+    date_needed: str
+    hours: float
+    reason: str
+    within_work_hours: bool
+    balance_available: float
+    balance_after: float
+    sufficient_balance: bool
+    manager: str
+    message: str
     demo: bool = True
