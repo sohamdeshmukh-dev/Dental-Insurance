@@ -83,7 +83,9 @@ def agent_message(req: AgentMessage):
             result["engine"] = "supervisor"
             result["bedrock_error"] = str(exc)
             return result
-    return run(req.message, today=req.today, session_id=req.session_id)
+    result = run(req.message, today=req.today, session_id=req.session_id)
+    result["engine"] = "supervisor"
+    return result
 
 
 @app.get("/api/v1/benefits/timeline")
