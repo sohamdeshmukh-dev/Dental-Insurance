@@ -27,6 +27,10 @@ def test_codes_from_both_engine_shapes():
         {"tool": "compare_networks", "input": {"code": "NOPE"}, "status": "error"},
         {"tool": "get_benefit_usage", "input": {}, "status": "success"},
     ]}) == ["D2740"]
+    assert research.codes_from({"tool_calls": [
+        {"tool": "compare_services", "input": {"codes": ["D3330", "D2740"]}, "status": "success"},
+        {"tool": "compare_services", "input": {"codes": ["D7140"]}, "status": "error"},
+    ]}) == ["D2740", "D3330"]
     assert research.codes_from({"status": "OK", "explanation": "Hello!"}) == []
 
 

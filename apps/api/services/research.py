@@ -37,8 +37,13 @@ PROMPT = (
 def codes_from(result: dict) -> list[str]:
     """CDT codes an agent response actually priced, from either engine's response shape."""
     codes = [p["selected_code"] for p in result.get("procedures", [])]
-    codes += [c["input"].get("code") for c in result.get("tool_calls", [])
-              if c["tool"] == "compare_networks" and c["status"] == "success"]
+    for c in result.get("tool_calls", []):
+        if c["status"] != "success":
+            continue
+        if c["tool"] == "compare_networks":
+            codes.append(c["input"].get("code"))
+        elif c["tool"] == "compare_services":  # several codes priced in one call
+            codes += c["input"].get("codes") or []
     return sorted({c for c in codes if c})
 
 
