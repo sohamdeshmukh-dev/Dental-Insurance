@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { animate } from "framer-motion";
 
 export function Logo() {
-  return <img src="/brand/logo.svg" alt="Lincoln Financial" className="logo-img" />;
+  return (
+    <svg className="logo-img" viewBox="90 320 1280 410" width="280" height="90" role="img"
+      aria-label="Lincoln DentalConnect — A Lincoln Financial solution">
+      {/* Frame the supplied artwork without its outer whitespace; keep the source image intact. */}
+      <image href="/brand/lincoln-dental-connect.png" width="1448" height="1086" />
+    </svg>
+  );
 }
 
 /** Count-up number that animates whenever `value` changes. */
