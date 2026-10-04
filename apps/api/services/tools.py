@@ -93,3 +93,28 @@ def get_account():
 def get_clinic_estimates(member: Member, provider_id: str, on: date):
     from services import clinic
     return clinic.clinic_estimates(member, provider_id, on)
+
+
+def compare_services(member: Member, codes: list[str], today: date):
+    """Side-by-side in-network vs out-of-network member cost for the chosen services.
+
+    Every figure comes from the deterministic coverage engine (never the LLM). Raises KeyError
+    for an unknown code so the caller can surface NEEDS_INFORMATION rather than fabricate a price.
+    """
+    from schemas import ServiceCompareRow, ServiceComparison
+    rows, in_total, out_total = [], 0.0, 0.0
+    for code in codes:
+        proc = lookup_procedure(code)  # KeyError on unknown code
+        c_in = calculate_coverage(PLAN, member, code, "in", today)
+        c_out = calculate_coverage(PLAN, member, code, "out", today)
+        rows.append(ServiceCompareRow(
+            code=code, name=proc.name, category=proc.category,
+            in_member_pays=c_in.member_payment, out_member_pays=c_out.member_payment,
+            in_covered=c_in.covered, out_covered=c_out.covered,
+            savings=round(c_out.member_payment - c_in.member_payment, 2)))
+        in_total += c_in.member_payment
+        out_total += c_out.member_payment
+    return ServiceComparison(
+        rows=rows, in_total=round(in_total, 2), out_total=round(out_total, 2),
+        savings_total=round(out_total - in_total, 2),
+        disclaimer="Estimates only — actual benefits are determined when the claim is processed.")

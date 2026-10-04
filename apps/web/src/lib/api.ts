@@ -79,6 +79,13 @@ async function putJSON<T>(path: string, body: unknown, ms = 4000): Promise<T | n
 
 export interface ClinicServiceEstimate { code: string; name: string; category: string; allowed_amount: number; member_pays: number; covered: boolean; }
 export interface ClinicEstimates { provider_id: string; provider_name: string; network: Network; services: ClinicServiceEstimate[]; disclaimer: string; }
+export interface ServiceCompareRow {
+  code: string; name: string; category: string;
+  in_member_pays: number; out_member_pays: number; in_covered: boolean; out_covered: boolean; savings: number;
+}
+export interface ServiceComparison {
+  rows: ServiceCompareRow[]; in_total: number; out_total: number; savings_total: number; disclaimer: string;
+}
 export type Urgency = "routine" | "soon" | "urgent";
 export interface PreAuth {
   id: string; status: "submitted" | "approved" | "denied"; procedure_name: string; provider_name: string;
@@ -134,6 +141,8 @@ export const api = {
     ),
   clinicEstimates: (providerId: string, member = "demo") =>
     getJSON<ClinicEstimates>(`/api/v1/providers/${providerId}/estimates?member_id=${member}`),
+  compareServices: (codes: string[], member = "demo") =>
+    postJSON<ServiceComparison>("/api/v1/benefits/compare", { member_id: member, codes }, 3000),
   preauthCreate: (body: { member_id: string; provider_id: string; code: string; estimated_cost: number; requested_amount: number; urgency: Urgency; reason: string }) =>
     postJSON<PreAuth>("/api/v1/preauth", body, 3000),
   preauthDecide: (id: string) => postJSON<PreAuth>(`/api/v1/preauth/${id}/decide`, {}, 3000),

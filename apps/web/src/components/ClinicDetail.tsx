@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { api, type ClinicEstimates, type PreAuth, type Provider, type Urgency } from "../lib/api";
+import { api, type ClinicEstimates, type PreAuth, type Provider, type ServiceComparison, type Urgency } from "../lib/api";
 
 const money = (n: number) => "$" + Math.round(n).toLocaleString();
 
@@ -8,8 +8,18 @@ export function ClinicDetail({ provider, memberId, onClose }: { provider: Provid
   const inNet = provider.network_status === "VERIFIED_IN_NETWORK";
   const [est, setEst] = useState<ClinicEstimates | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
 
-  useEffect(() => { setEst(null); api.clinicEstimates(provider.provider_id, memberId).then(setEst); }, [provider.provider_id, memberId]);
+  useEffect(() => {
+    setEst(null); setPicked(new Set());
+    api.clinicEstimates(provider.provider_id, memberId).then((e) => {
+      setEst(e);
+      if (e) setPicked(new Set(e.services.map((s) => s.code)));  // start with everything selected
+    });
+  }, [provider.provider_id, memberId]);
+
+  const toggle = (code: string) =>
+    setPicked((p) => { const n = new Set(p); n.has(code) ? n.delete(code) : n.add(code); return n; });
 
   return (
     <motion.div className="clinic-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -25,17 +35,22 @@ export function ClinicDetail({ provider, memberId, onClose }: { provider: Provid
           <span className={`cm-badge ${inNet ? "in" : "out"}`}>{inNet ? "✓ In network" : "Out of network"}</span>
         </div>
 
-        <div className="cm-section-title">Estimated cost for their services</div>
+        <div className="cm-section-title">Pick the services you need</div>
         {!est ? <div className="cm-loading">Estimating…</div> : (
           <div className="cm-services">
             {est.services.map((s) => (
-              <div className="cm-srv" key={s.code}>
+              <label className={`cm-srv pick${picked.has(s.code) ? " on" : ""}`} key={s.code}>
+                <input type="checkbox" checked={picked.has(s.code)} onChange={() => toggle(s.code)} />
                 <div className="cm-srv-name">{s.name}<span>{s.code}</span></div>
-                <div className="cm-srv-pay">{s.covered ? `${money(s.member_pays)}` : "Not covered"}<span>you pay</span></div>
-              </div>
+                <div className="cm-srv-pay">{s.covered ? `${money(s.member_pays)}` : "Not covered"}<span>you pay {provider.network_status === "VERIFIED_IN_NETWORK" ? "in-network" : "out-of-network"}</span></div>
+              </label>
             ))}
             <div className="cm-disc">{est.disclaimer}</div>
           </div>
+        )}
+
+        {est && est.services.length > 0 && (
+          <ComparePanel codes={[...picked]} memberId={memberId} />
         )}
 
         {!inNet && (
@@ -52,6 +67,48 @@ export function ClinicDetail({ provider, memberId, onClose }: { provider: Provid
         )}
       </motion.div>
     </motion.div>
+  );
+}
+
+function ComparePanel({ codes, memberId }: { codes: string[]; memberId: string }) {
+  const [open, setOpen] = useState(false);
+  const [cmp, setCmp] = useState<ServiceComparison | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open || codes.length === 0) { setCmp(null); return; }
+    let live = true;
+    setBusy(true);
+    api.compareServices(codes, memberId).then((c) => { if (live) { setCmp(c); setBusy(false); } });
+    return () => { live = false; };
+  }, [open, codes.join(","), memberId]);
+
+  if (codes.length === 0)
+    return <div className="cm-cmp-hint">Select at least one service to compare in-network vs out-of-network cost.</div>;
+
+  return (
+    <div className="cm-cmp">
+      <button className="cm-cmp-toggle" onClick={() => setOpen((v) => !v)}>
+        {open ? "Hide" : "Compare"} in-network vs out-of-network ({codes.length} service{codes.length > 1 ? "s" : ""})
+      </button>
+      {open && (busy || !cmp ? <div className="cm-loading">Comparing…</div> : (
+        <motion.div className="cm-cmp-body" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="cm-cmp-row head"><span>Service</span><span>In-network</span><span>Out-of-network</span></div>
+          {cmp.rows.map((r) => (
+            <div className="cm-cmp-row" key={r.code}>
+              <span className="cm-cmp-name">{r.name}<i>{r.code}</i></span>
+              <span>{r.in_covered ? money(r.in_member_pays) : "—"}</span>
+              <span>{r.out_covered ? money(r.out_member_pays) : "—"}</span>
+            </div>
+          ))}
+          <div className="cm-cmp-row total">
+            <span>Total you pay</span><span>{money(cmp.in_total)}</span><span>{money(cmp.out_total)}</span>
+          </div>
+          <div className="cm-cmp-save">Staying in-network saves about <b>{money(cmp.savings_total)}</b> on these services.</div>
+          <div className="cm-disc">{cmp.disclaimer}</div>
+        </motion.div>
+      ))}
+    </div>
   );
 }
 

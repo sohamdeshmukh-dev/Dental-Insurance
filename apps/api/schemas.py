@@ -225,6 +225,31 @@ class InterpretRequest(BaseModel):
     text: str
 
 
+class CompareRequest(BaseModel):
+    member_id: str = "demo"
+    codes: list[str] = Field(min_length=1)
+
+
+class ServiceCompareRow(BaseModel):
+    code: str
+    name: str
+    category: str
+    in_member_pays: float
+    out_member_pays: float
+    in_covered: bool
+    out_covered: bool
+    savings: float  # out-of-network member cost minus in-network (what staying in-network saves)
+
+
+class ServiceComparison(BaseModel):
+    """Side-by-side in-network vs out-of-network member cost for a chosen set of services."""
+    rows: list[ServiceCompareRow]
+    in_total: float
+    out_total: float
+    savings_total: float
+    disclaimer: str
+
+
 class AgentMessage(BaseModel):
     session_id: Optional[str] = None
     message: str

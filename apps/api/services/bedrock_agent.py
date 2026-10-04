@@ -36,7 +36,14 @@ SYSTEM_PROMPT = (
     "To find dentist offices, call search_network_providers — never state that an office is "
     "in-network unless a tool result marks it VERIFIED_IN_NETWORK. "
     "If you cannot identify a procedure or lack required information, say so and ask for it rather "
-    "than guessing. Always end with a reminder that estimates are not final and that actual "
+    "than guessing. "
+    "You can also compare in-network vs out-of-network cost for chosen services (compare_services), "
+    "draft a simulated payment plan and send it to the dentist (create_payment_plan then "
+    "send_payment_plan_to_dentist), and submit a simulated out-of-network pre-authorization to Lincoln "
+    "Financial (create_preauth). These are clearly-labeled demos: no real money moves and no real payer "
+    "or dentist is contacted. Confirm the member's intent before creating or sending anything, and tell "
+    "them it is a simulated action. "
+    "Always end with a reminder that estimates are not final and that actual "
     "benefits are determined when the claim is processed."
 )
 
@@ -119,6 +126,68 @@ def _tool_config() -> dict:
                     "required": ["codes"],
                 }},
             }},
+            {"toolSpec": {
+                "name": "compare_services",
+                "description": "Side-by-side in-network vs out-of-network member cost for a chosen set of CDT codes, "
+                               "per service and totaled, with the savings from staying in-network. From the "
+                               "coverage engine.",
+                "inputSchema": {"json": {
+                    "type": "object",
+                    "properties": {"codes": {"type": "array", "items": {"type": "string"}}},
+                    "required": ["codes"],
+                }},
+            }},
+            {"toolSpec": {
+                "name": "get_clinic_estimate",
+                "description": "Estimated member cost for the services a specific clinic offers, at that clinic's "
+                               "verified network status. From the coverage engine.",
+                "inputSchema": {"json": {
+                    "type": "object",
+                    "properties": {"provider_id": {"type": "string"}},
+                    "required": ["provider_id"],
+                }},
+            }},
+            {"toolSpec": {
+                "name": "create_payment_plan",
+                "description": "Draft a SIMULATED payment plan for the member's estimated responsibility at a clinic "
+                               "for the given CDT codes. Returns the draft with total, monthly amount, and schedule. "
+                               "A draft only — it is not sent until send_payment_plan_to_dentist is called.",
+                "inputSchema": {"json": {
+                    "type": "object",
+                    "properties": {
+                        "provider_id": {"type": "string"},
+                        "codes": {"type": "array", "items": {"type": "string"}},
+                        "term_months": {"type": "integer", "description": "1-60; default 12."},
+                    },
+                    "required": ["provider_id", "codes"],
+                }},
+            }},
+            {"toolSpec": {
+                "name": "send_payment_plan_to_dentist",
+                "description": "Send a drafted payment plan to the dentist for SIMULATED approval (demo; no real "
+                               "contract). Use the plan_id returned by create_payment_plan.",
+                "inputSchema": {"json": {
+                    "type": "object",
+                    "properties": {"plan_id": {"type": "string"}},
+                    "required": ["plan_id"],
+                }},
+            }},
+            {"toolSpec": {
+                "name": "create_preauth",
+                "description": "Submit a SIMULATED out-of-network pre-authorization form to Lincoln Financial for one "
+                               "CDT code. The estimated and requested amounts come from the coverage engine, not you. "
+                               "Demo only; no real payer is contacted.",
+                "inputSchema": {"json": {
+                    "type": "object",
+                    "properties": {
+                        "provider_id": {"type": "string"},
+                        "code": {"type": "string"},
+                        "urgency": {"type": "string", "enum": ["routine", "soon", "urgent"]},
+                        "reason": {"type": "string"},
+                    },
+                    "required": ["provider_id", "code"],
+                }},
+            }},
         ]
     }
 
@@ -162,6 +231,33 @@ def _dispatch(name: str, args: dict, *, plan, member, today: date) -> Any:
             plan, member, args["codes"], set(args.get("urgent_codes", [])),
             args.get("network", "in"), today)
         return cp.model_dump()
+
+    if name == "compare_services":
+        return tools.compare_services(member, args["codes"], today).model_dump()
+
+    if name == "get_clinic_estimate":
+        return tools.get_clinic_estimates(member, args["provider_id"], today).model_dump()
+
+    if name == "create_payment_plan":
+        from schemas import PaymentPlanCreate
+        from services import payment_plans as pp_svc
+        req = PaymentPlanCreate(member_id=member.member_id, provider_id=args["provider_id"],
+                                codes=args["codes"], term_months=args.get("term_months", 12))
+        return pp_svc.create(req).model_dump()
+
+    if name == "send_payment_plan_to_dentist":
+        from services import payment_plans as pp_svc
+        return pp_svc.send_to_doctor(args["plan_id"]).model_dump()
+
+    if name == "create_preauth":
+        from schemas import PreAuthCreate
+        from services import preauth as preauth_svc
+        # Amounts come from the coverage engine's out-of-network estimate, never the model.
+        est = tools.calculate_coverage(plan, member, args["code"], "out", today)
+        req = PreAuthCreate(member_id=member.member_id, provider_id=args["provider_id"], code=args["code"],
+                            estimated_cost=est.provider_charge, requested_amount=est.provider_charge,
+                            urgency=args.get("urgency", "routine"), reason=args.get("reason", ""))
+        return preauth_svc.create(req).model_dump()
 
     raise KeyError(f"Unknown tool {name!r}")
 

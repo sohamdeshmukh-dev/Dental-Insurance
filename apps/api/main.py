@@ -6,8 +6,8 @@ from datetime import date
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, PaymentPlanCreate,
-                     PreAuthCreate, PTOCreate, RedeemRequest, WorkScheduleUpdate)
+from schemas import (AgentMessage, CarePlanRequest, CompareRequest, EstimateRequest, InterpretRequest,
+                     PaymentPlanCreate, PreAuthCreate, PTOCreate, RedeemRequest, WorkScheduleUpdate)
 from services import bedrock_agent, brief_store
 from services import payment_plans as pp_svc
 from services import preauth as preauth_svc
@@ -74,6 +74,15 @@ def estimate(req: EstimateRequest):
     except KeyError:
         raise HTTPException(404, f"Unknown procedure code {req.procedure_code}")
     return {"in_network": both["in"].model_dump(), "out_of_network": both["out"].model_dump()}
+
+
+@app.post("/api/v1/benefits/compare")
+def benefits_compare(req: CompareRequest):
+    member = member_of(req.member_id)
+    try:
+        return tools.compare_services(member, req.codes, date.today()).model_dump()
+    except KeyError as e:
+        raise HTTPException(404, f"Unknown procedure code {e}")
 
 
 @app.get("/api/v1/providers")
