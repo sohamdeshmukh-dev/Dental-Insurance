@@ -10,3 +10,9 @@ apps/web/config.js
 .env
 .env.local
 .env*.local
+
+# node / vite
+node_modules/
+apps/web/dist/
+apps/web/node_modules/
+apps/web/*.tsbuildinfo
