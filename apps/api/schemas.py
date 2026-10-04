@@ -111,6 +111,7 @@ class CoverageResult(BaseModel):
     plan_payment: float
     member_payment: float
     annual_max_applied: bool
+    annual_max_remaining_after: Optional[float] = None  # None when the claim is denied
     steps: list[Step]
     provenance: dict[str, Provenance] = {}
     calculation_version: str

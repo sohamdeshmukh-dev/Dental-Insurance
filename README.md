@@ -110,6 +110,20 @@ export AWS_REGION="us-east-1"                                          # a regio
 cd apps/api && ../../.venv/bin/uvicorn main:app --reload
 ```
 
+### Background research briefs (Bedrock only)
+
+After a chat reply that prices a procedure, the page calls `POST /api/v1/research/{session_id}/run`;
+the agent researches it in that request and the page shows a banner when `GET /api/v1/research/{session_id}`
+returns `READY`. Briefs live in memory by default (fine locally). On serverless (Vercel) set `BRIEFS_TABLE`
+to a DynamoDB table so every instance sees the same briefs:
+
+```bash
+aws cloudformation deploy --template-file infra/briefs-table.yaml \
+  --stack-name dental-research-briefs --capabilities CAPABILITY_IAM
+# attach the PolicyArn stack output to the IAM user/role the app runs as, then:
+export BRIEFS_TABLE=dental-research-briefs
+```
+
 With `BEDROCK_MODEL_ID` set, `POST /api/v1/agent/message` runs on Bedrock (responses carry
 `engine: "bedrock"`); unset, it runs the supervisor. **Note:** this app targets **Python 3.10+**.
 

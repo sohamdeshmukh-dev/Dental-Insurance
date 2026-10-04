@@ -1,9 +1,3 @@
-fastapi>=0.115
-uvicorn>=0.30
-pydantic>=2.7
-httpx>=0.27
+# Runtime deps live with the API service (also what Vercel installs); this adds test-only deps.
+-r apps/api/requirements.txt
 pytest>=8
-# Optional: only needed to run the AWS Bedrock Converse orchestrator (set BEDROCK_MODEL_ID).
-# The app and test suite run without it; boto3 is imported lazily in services/bedrock_agent.py.
-botocore[crt]>=1.34  # needed for `aws login` credentials
-boto3>=1.34

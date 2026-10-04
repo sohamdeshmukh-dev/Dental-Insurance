@@ -206,6 +206,9 @@
     font-size:13px;font-weight:600;padding:11px 18px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);
     transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:60;max-width:90vw;}
   .rwd-toast.show{transform:translateX(-50%) translateY(0);}
+  .brief-note{position:fixed;top:72px;right:16px;z-index:60;max-width:min(320px,calc(100vw - 32px));text-align:left;border:none;cursor:pointer;
+    background:var(--brand);color:#fff;font:inherit;font-size:13px;font-weight:600;padding:12px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);}
+  .brief-note span{display:block;font-weight:400;opacity:.85;margin-top:2px;}
 
   /* care timeline */
   .timeline{position:relative;margin:10px 0 4px;padding-left:4px;}
@@ -541,7 +544,9 @@
 <script>
 // ============================================================================
 const MAPBOX_TOKEN = window.MAPBOX_TOKEN || "PASTE_YOUR_MAPBOX_PUBLIC_TOKEN_HERE";
-const API_BASE = "http://localhost:8000";
+// Deployed, the API is same-origin under /api (see vercel.json). The local static server
+// (port 5173) and file:// have no API of their own, so they use the local uvicorn.
+const API_BASE = (location.protocol==="file:"||location.port==="5173") ? "http://localhost:8000" : "";
 const ZIP_CENTROIDS = {"19122":[39.9780,-75.1370],"19103":[39.9526,-75.1745],"19104":[39.9570,-75.1980],"19125":[39.9700,-75.1250],"19146":[39.9370,-75.1830]};
 const FALLBACK = [
   {provider_id:"P001",name:"Fishtown Family Dental",specialty:"General Dentist",address:"1200 Frankford Ave",phone:"215-555-0101",latitude:39.9702,longitude:-75.1340,accepting_new_patients:true,network_status:"VERIFIED_IN_NETWORK"},
@@ -619,6 +624,10 @@ document.getElementById("miniZip").addEventListener("keydown",e=>{if(e.key==="En
 
 // ---------- chat ----------
 const msgs=document.getElementById("msgs");
+// Session id survives reloads so a background research brief can find its way back.
+const store=(()=>{try{localStorage.getItem("x");return localStorage;}catch{return {getItem(){return null;},setItem(){}};}})();
+const SESSION_ID=store.getItem("session_id")||crypto.randomUUID();
+store.setItem("session_id",SESSION_ID);
 function esc(s){return s.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
 function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");}
 function addUser(t){const d=document.createElement("div");d.className="u";d.textContent=t;msgs.appendChild(d);scroll();}
@@ -648,7 +657,7 @@ function receipt(proc,cmp){
 async function ask(text){
   addUser(text); addTyping();
   try{
-    const r=await fetch(`${API_BASE}/api/v1/agent/message`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text}),signal:AbortSignal.timeout(4000)});
+    const r=await fetch(`${API_BASE}/api/v1/agent/message`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text,session_id:SESSION_ID}),signal:AbortSignal.timeout(30000)});
     if(!r.ok)throw 0; const out=await r.json();
     rmTyping();
     const a=document.createElement("div");a.className="a";
@@ -657,6 +666,8 @@ async function ask(text){
     const text_=out.explanation||out.message||"I couldn't find an estimate for that.";
     a.innerHTML=`<div class="row"><div class="badge-ai"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg></div><div class="bubble"><p>${md(text_)}</p></div></div>${cards}`;
     msgs.appendChild(a);scroll();
+    // Serverless can't work after a response, so the research runs in its own request. Not awaited.
+    if(out.research_pending)fetch(`${API_BASE}/api/v1/research/${SESSION_ID}/run`,{method:"POST",keepalive:true}).catch(()=>{});
   }catch{
     rmTyping();
     const a=document.createElement("div");a.className="a";
@@ -664,6 +675,28 @@ async function ask(text){
     msgs.appendChild(a);scroll();
   }
 }
+// Background research: the agent keeps working on the last procedure after the reply; show its
+// brief once, on the next visit or as soon as it lands.
+let briefShown=null;
+async function checkResearch(){
+  try{
+    const r=await fetch(`${API_BASE}/api/v1/research/${SESSION_ID}`,{signal:AbortSignal.timeout(2000)});
+    if(!r.ok)return; const b=await r.json();
+    if(b.status!=="READY"||b.created_at===store.getItem("brief_seen")||b.created_at===briefShown)return;
+    briefShown=b.created_at;
+    const what=(b.procedures||b.codes).join(", ").toLowerCase();
+    const a=document.createElement("div");a.className="a";
+    a.innerHTML=`<div class="row"><div class="badge-ai"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg></div><div class="bubble"><p>${md(`**While you were away, I looked into your ${what}:**\n\n${b.brief}\n\n${b.disclaimer}`)}</p></div></div>`;
+    msgs.appendChild(a);
+    // Stays until clicked: the member may be on another view, or away for a while.
+    document.getElementById("briefNote")?.remove();
+    const n=document.createElement("button");n.id="briefNote";n.className="brief-note";n.setAttribute("role","status");
+    n.innerHTML=`New research on your ${esc(what)}<span>Tap to read it in Ask AI</span>`;
+    n.addEventListener("click",()=>{store.setItem("brief_seen",b.created_at);n.remove();showView("assistant");a.scrollIntoView({behavior:"smooth",block:"start"});});
+    document.body.appendChild(n);
+  }catch{}
+}
+checkResearch(); setInterval(checkResearch,15000);
 document.getElementById("askForm").addEventListener("submit",e=>{e.preventDefault();const v=document.getElementById("askInput").value.trim();if(!v)return;document.getElementById("askInput").value="";ask(v);});
 document.querySelectorAll("#chips .chip").forEach(c=>c.addEventListener("click",()=>ask(c.textContent)));
 

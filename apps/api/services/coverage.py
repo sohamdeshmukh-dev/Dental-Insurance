@@ -37,6 +37,7 @@ class ClaimContext:
     payment_before_max: Decimal = D(0)
     plan_payment: Decimal = D(0)
     max_applied: bool = False
+    max_remaining_after: Optional[Decimal] = None
     provider_charge: Decimal = D(0)
     steps: list[Step] = field(default_factory=list)
 
@@ -132,6 +133,7 @@ class AnnualMaximumRule(Rule):
         remaining = max(D(0), money(ctx.plan.annual_maximum) - money(ctx.member.benefits_used) - money(ctx.member.benefits_pending))
         ctx.plan_payment = min(ctx.payment_before_max, remaining)
         ctx.max_applied = ctx.plan_payment < ctx.payment_before_max
+        ctx.max_remaining_after = remaining - ctx.plan_payment
         ctx.note(self.name, f"Plan payment limited by ${remaining} remaining annual maximum." if ctx.max_applied
                  else f"Within ${remaining} remaining annual maximum.", ctx.plan_payment)
 
@@ -157,5 +159,12 @@ def calculate_coverage(plan: DentalPlan, member: Member, procedure: Procedure, n
         provider_charge=float(ctx.provider_charge), allowed_amount=float(ctx.allowed),
         deductible_applied=float(ctx.deductible_applied), coinsurance_pct=float(ctx.coinsurance),
         plan_payment_before_max=float(ctx.payment_before_max), plan_payment=float(ctx.plan_payment),
-        member_payment=float(member_payment), annual_max_applied=ctx.max_applied, steps=ctx.steps,
+        member_payment=float(member_payment), annual_max_applied=ctx.max_applied,
+        annual_max_remaining_after=None if ctx.max_remaining_after is None else float(ctx.max_remaining_after),
+        steps=ctx.steps,
         provenance=prov, calculation_version=CALC_VERSION, disclaimer=DISCLAIMER)
+
+
+def in_network_savings(in_net: CoverageResult, out_net: CoverageResult) -> float:
+    """How much less the member pays in-network than out-of-network for the same code."""
+    return float(money(out_net.member_payment) - money(in_net.member_payment))

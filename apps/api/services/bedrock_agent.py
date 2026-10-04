@@ -19,7 +19,7 @@ from datetime import date
 from typing import Any, Callable, Optional
 
 from services import tools
-from services.coverage import CALC_VERSION
+from services.coverage import CALC_VERSION, in_network_savings
 from services.tracing import Tracer
 
 # Max model<->tool round trips before we stop, so a misbehaving loop can't run unbounded.
@@ -69,8 +69,10 @@ def _tool_config() -> dict:
                 "name": "compare_networks",
                 "description": "Deterministically calculate in-network vs out-of-network coverage for one "
                                "CDT code: coinsurance, deductible applied, plan payment, member payment, and "
-                               "whether the annual maximum capped the payment. All numbers come from the "
-                               "coverage engine with source provenance.",
+                               "whether the annual maximum capped the payment. Also returns "
+                               "annual_max_remaining_after (annual maximum left after this procedure) and "
+                               "in_network_savings (member cost difference, out minus in). All numbers come "
+                               "from the coverage engine with source provenance.",
                 "inputSchema": {"json": {
                     "type": "object",
                     "properties": {"code": {"type": "string", "description": "CDT procedure code, e.g. D3330."}},
@@ -131,10 +133,13 @@ def _dispatch(name: str, args: dict, *, plan, member, today: date) -> Any:
 
     if name == "compare_networks":
         code = args["code"]
+        in_net = tools.calculate_coverage(plan, member, code, "in", today)
+        out_net = tools.calculate_coverage(plan, member, code, "out", today)
         return {
             "code": code,
-            "in_network": tools.calculate_coverage(plan, member, code, "in", today).model_dump(),
-            "out_of_network": tools.calculate_coverage(plan, member, code, "out", today).model_dump(),
+            "in_network": in_net.model_dump(),
+            "out_of_network": out_net.model_dump(),
+            "in_network_savings": in_network_savings(in_net, out_net),
         }
 
     if name == "search_network_providers":

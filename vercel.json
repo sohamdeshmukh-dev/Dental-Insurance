@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "apps/api",
+      "framework": "fastapi",
+      "entrypoint": "main:app"
+    },
+    "web": {
+      "root": "apps/web",
+      "buildCommand": "echo \"window.MAPBOX_TOKEN='$MAPBOX_PUBLIC_TOKEN';\" > config.js",
+      "outputDirectory": "."
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": { "service": "api" } },
+    { "source": "/health", "destination": { "service": "api" } },
+    { "source": "/(.*)", "destination": { "service": "web" } }
+  ]
+}

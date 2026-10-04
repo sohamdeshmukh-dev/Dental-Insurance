@@ -6,7 +6,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from schemas import (AgentMessage, CarePlanRequest, EstimateRequest, InterpretRequest, RedeemRequest)
-from services import bedrock_agent
+from services import bedrock_agent, brief_store
+from services import research
 from services import rewards as rewards_svc
 from services import tools
 from services.procedures import interpret
@@ -77,15 +78,30 @@ def agent_message(req: AgentMessage):
     # Bedrock call fails at runtime, degrade gracefully to the supervisor rather than erroring.
     if bedrock_agent.bedrock_enabled():
         try:
-            return bedrock_agent.run(req.message, today=req.today, session_id=req.session_id)
+            result = bedrock_agent.run(req.message, today=req.today, session_id=req.session_id)
         except Exception as exc:  # pragma: no cover - exercised only with a live/broken AWS config
             result = run(req.message, today=req.today, session_id=req.session_id)
             result["engine"] = "supervisor"
             result["bedrock_error"] = str(exc)
-            return result
+        # Once a procedure is identified, record a brief to research; the page then calls
+        # POST /research/{session_id}/run (serverless can't run work after the response).
+        result["research_pending"] = research.queue(req.session_id, result, req.message, req.today)
+        return result
     result = run(req.message, today=req.today, session_id=req.session_id)
     result["engine"] = "supervisor"
     return result
+
+
+@app.get("/api/v1/research/{session_id}")
+def research_brief(session_id: str):
+    return brief_store.get(session_id) or {"status": "NONE"}
+
+
+@app.post("/api/v1/research/{session_id}/run")
+def research_run(session_id: str):
+    # Runs the queued brief inside this request (~30-45s). Safe to call twice: only the caller
+    # that wins the claim does the work.
+    return {"status": research.run_pending(session_id)["status"]}
 
 
 @app.get("/api/v1/benefits/timeline")
