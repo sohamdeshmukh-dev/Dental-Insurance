@@ -88,6 +88,19 @@ def care_plan(req: CarePlanRequest):
 
 @app.post("/api/v1/agent/message")
 def agent_message(req: AgentMessage):
+    member = member_of(req.member_id)
+    from services import bedrock
+    from services.guardrails import screen_input
+    screen = screen_input(req.message)
+    if screen.urgent:
+        return {"status": "EMERGENCY", "message": screen.message, "urgent": True, "via": "guardrail"}
+    if not screen.ok:
+        return {"status": "NEEDS_INFORMATION", "message": screen.message, "via": "guardrail"}
+    if bedrock.enabled():
+        try:
+            return bedrock.run_estimation_agent(screen.text, member, req.today)
+        except Exception:
+            pass  # fall back to the deterministic rule-based supervisor
     return run(req.message, member_id=req.member_id, today=req.today, session_id=req.session_id)
 
 

@@ -88,6 +88,18 @@ def run(message: str, *, plan_id: str = "LFG-123", member_id: str = "demo",
     plan = tools.get_plan_details(plan_id)
     member = tools.get_member(member_id)
 
+    # Guardrails first: emergencies, PII, off-topic (clinical urgency before finances).
+    from services.guardrails import screen_input
+    with tracer.span("guardrails", "screen_input"):
+        screen = screen_input(message)
+    if screen.urgent:
+        return {"status": "EMERGENCY", "message": screen.message, "urgent": True,
+                "notes": screen.notes, "trace": [e.model_dump() for e in tracer.events]}
+    if not screen.ok:
+        return {"status": "NEEDS_INFORMATION", "message": screen.message,
+                "notes": screen.notes, "trace": [e.model_dump() for e in tracer.events]}
+    message = screen.text  # redacted
+
     with tracer.span("intake", "parse_message"):
         intake = _intake(message)
     with tracer.span("procedure", "interpret"):
