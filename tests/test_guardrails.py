@@ -1,6 +1,6 @@
 from datetime import date
 
-from services import bedrock
+from services import bedrock_agent
 from services.guardrails import check_output, screen_input
 from services.supervisor import run
 
@@ -42,8 +42,6 @@ def test_supervisor_emergency_short_circuits():
     assert out["status"] == "EMERGENCY" and out.get("urgent")
 
 
-def test_bedrock_disabled_without_aws(monkeypatch):
-    monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
-    monkeypatch.delenv("AWS_PROFILE", raising=False)
-    monkeypatch.delenv("AWS_ROLE_ARN", raising=False)
-    assert bedrock.enabled() is False
+def test_bedrock_disabled_without_model_id(monkeypatch):
+    monkeypatch.delenv("BEDROCK_MODEL_ID", raising=False)
+    assert bedrock_agent.bedrock_enabled() is False

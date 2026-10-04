@@ -1,7 +1,7 @@
 """AWS Bedrock Converse tool-use orchestrator — an OPTIONAL, additive alternative to the
 rule-based ``supervisor.run()``.
 
-Design contract (see AGENTS.md): the model INTERPRETS and NARRATES; it never calculates a
+Design contract (see CLAUDE.md): the model INTERPRETS and NARRATES; it never calculates a
 benefit number, price, network status, or balance. Every fact comes back from the
 deterministic services in ``services.tools``; the model may only decide *which* tool to call
 and explain the results it is handed.

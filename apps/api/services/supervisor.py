@@ -11,7 +11,7 @@ import re
 from datetime import date
 from typing import Optional
 
-from schemas import (Claim, CoverageResult, Validation, ValidationCheck)
+from schemas import CoverageResult, Validation, ValidationCheck
 from services import tools
 from services.coverage import CALC_VERSION
 from services.procedures import interpret
