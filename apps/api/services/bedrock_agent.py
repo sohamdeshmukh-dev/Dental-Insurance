@@ -203,7 +203,7 @@ def run(message: str, *, plan_id: str = "LFG-123", member_id: str = "demo",
         with tracer.span("bedrock", "converse", model_id, CALC_VERSION):
             resp = converse(
                 modelId=model_id,
-                system=[{"text": SYSTEM_PROMPT}],
+                system=[{"text": f"{SYSTEM_PROMPT} Today's date is {today.isoformat()}; use it (and tool-provided periods) for any dates, never guess the year."}],
                 messages=messages,
                 toolConfig=tool_config,
             )
